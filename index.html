@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Highpoint Infusion Lab</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #0c0a04 0%, #130f02 40%, #0a0c06 100%);
+      font-family: 'Georgia', 'Times New Roman', serif;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2.5rem 1rem 4rem;
+      color: #f5e6a3;
+    }
+
+    #app { width: 100%; max-width: 500px; }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 30px rgba(212,175,55,0.05); }
+      50%      { box-shadow: 0 0 50px rgba(212,175,55,0.11); }
+    }
+
+    /* ── Header ── */
+    .header { text-align: center; margin-bottom: 2rem; animation: slideUp 0.5s ease; }
+    .header-icon {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 60px; height: 60px; border-radius: 50%;
+      background: rgba(212,175,55,0.08);
+      border: 1px solid rgba(212,175,55,0.18);
+      font-size: 1.6rem; margin-bottom: 0.9rem;
+      box-shadow: 0 0 40px rgba(212,175,55,0.08);
+    }
+    h1 {
+      font-size: 1.65rem; font-weight: 700;
+      background: linear-gradient(135deg, #f5e6a3 0%, #d4af37 55%, #9a7020 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: 0.04em;
+    }
+    .subtitle {
+      font-size: 0.62rem; color: rgba(212,175,55,0.35);
+      letter-spacing: 0.25em; text-transform: uppercase; margin-top: 0.35rem;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: linear-gradient(145deg, rgba(25,20,5,0.96) 0%, rgba(12,10,2,0.99) 100%);
+      border: 1px solid rgba(212,175,55,0.13);
+      border-radius: 1.5rem; padding: 2rem;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(212,175,55,0.07);
+      animation: slideUp 0.5s ease 0.1s both, pulse 5s ease-in-out infinite;
+      margin-bottom: 1.25rem;
+    }
+
+    /* ── Field labels ── */
+    .field-label {
+      display: block; font-size: 0.58rem; font-weight: 700;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      color: rgba(212,175,55,0.5); margin-bottom: 0.35rem;
+    }
+
+    /* ── Inputs ── */
+    input[type="text"], input[type="number"] {
+      width: 100%; background: transparent;
+      color: #f5e6a3; font-size: 0.95rem;
+      padding: 0.4rem 0.25rem; outline: none;
+      font-family: 'Georgia', serif;
+      border: none; border-bottom: 1.5px solid rgba(212,175,55,0.22);
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, input[type="number"]:focus {
+      border-bottom-color: rgba(212,175,55,0.75);
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type="number"] { -moz-appearance: textfield; }
+    input::placeholder { color: rgba(212,175,55,0.25); }
+
+    /* ── Grid helpers ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+
+    /* ── Divider ── */
+    .divider { height: 1px; background: rgba(212,175,55,0.07); margin: 1.5rem 0; }
+
+    /* ── Field wrapper ── */
+    .field { margin-bottom: 0; }
+
+    /* ── Carrier grid ── */
+    .carrier-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.6rem; margin-top: 0.5rem; }
+    .carrier-btn {
+      background: rgba(212,175,55,0.03);
+      border: 1px solid rgba(212,175,55,0.13);
+      border-radius: 0.75rem; padding: 0.6rem 0.4rem;
+      color: rgba(212,175,55,0.4);
+      font-family: inherit; font-size: 0.68rem;
+      text-align: center; line-height: 1.4;
+      cursor: pointer; transition: all 0.18s;
+    }
+    .carrier-btn:hover {
+      border-color: rgba(212,175,55,0.45);
+      background: rgba(212,175,55,0.08);
+    }
+    .carrier-btn.active {
+      background: rgba(212,175,55,0.15);
+      border-color: rgba(212,175,55,0.5);
+      color: #f5e6a3;
+      box-shadow: 0 0 16px rgba(212,175,55,0.1);
+    }
+    .carrier-emoji { font-size: 1.2rem; margin-bottom: 0.2rem; }
+
+    /* ── Cannabinoid inputs ── */
+    .cann-label {
+      display: block; font-size: 0.58rem; font-weight: 700;
+      letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.3rem;
+    }
+
+    /* ── Select ── */
+    select {
+      width: 100%;
+      background: rgba(20,16,4,0.9);
+      border: 1px solid rgba(212,175,55,0.18);
+      color: #f5e6a3; border-radius: 0.5rem;
+      padding: 0.45rem 0.5rem; font-size: 0.7rem;
+      outline: none; font-family: inherit;
+    }
+
+    /* ── Toggle buttons ── */
+    .toggle-group { display: flex; gap: 0.5rem; margin-top: 0.1rem; }
+    .toggle-btn {
+      flex: 1; padding: 0.45rem; border-radius: 0.5rem;
+      font-size: 0.7rem; font-family: inherit; cursor: pointer;
+      transition: all 0.18s;
+      background: transparent;
+      border: 1px solid rgba(212,175,55,0.13);
+      color: rgba(212,175,55,0.3);
+    }
+    .toggle-btn.active {
+      background: rgba(212,175,55,0.15);
+      border-color: rgba(212,175,55,0.45);
+      color: #f5e6a3;
+    }
+
+    /* ── Error ── */
+    .error-box {
+      margin-top: 1.25rem;
+      background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.18);
+      border-radius: 0.6rem; padding: 0.65rem 1rem;
+      font-size: 0.7rem; color: #fca5a5;
+    }
+    .warn-text { font-size: 0.57rem; color: #f87171; margin-top: 0.3rem; }
+
+    /* ── Calculate button ── */
+    .calc-btn {
+      width: 100%; margin-top: 1.75rem;
+      background: linear-gradient(135deg, #d4af37 0%, #9a7020 100%);
+      border: none; border-radius: 0.85rem;
+      color: #0c0a04; font-family: inherit;
+      font-size: 0.76rem; font-weight: 700;
+      letter-spacing: 0.22em; text-transform: uppercase;
+      padding: 0.9rem; cursor: pointer;
+      box-shadow: 0 4px 24px rgba(212,175,55,0.28);
+      transition: transform 0.15s, filter 0.15s;
+    }
+    .calc-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+    .calc-btn:active { transform: translateY(0); }
+
+    /* ── Results ── */
+    #results {
+      background: linear-gradient(145deg, rgba(20,16,4,0.98) 0%, rgba(8,8,4,0.99) 100%);
+      border: 1px solid rgba(212,175,55,0.18);
+      border-radius: 1.5rem; padding: 2rem;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(212,175,55,0.09);
+      animation: slideUp 0.4s ease;
+      display: none;
+    }
+    #results.visible { display: block; }
+
+    .result-badge {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: rgba(212,175,55,0.08);
+      border: 1px solid rgba(212,175,55,0.22);
+      border-radius: 2rem; padding: 0.4rem 1.25rem;
+      font-size: 0.88rem; color: #f5e6a3; font-style: italic;
+    }
+    .badge-dot { color: rgba(212,175,55,0.3); font-style: normal; }
+    .badge-carrier-label { font-size: 0.72rem; color: rgba(212,175,55,0.55); font-style: normal; }
+    .result-header { text-align: center; margin-bottom: 1.5rem; }
+    .result-sub { font-size: 0.58rem; color: rgba(212,175,55,0.28); letter-spacing: 0.22em; text-transform: uppercase; margin-top: 0.55rem; }
+
+    .per-tbsp-box {
+      background: rgba(212,175,55,0.04);
+      border: 1px solid rgba(212,175,55,0.1);
+      border-radius: 1rem; padding: 1.1rem 1rem; margin-bottom: 0.9rem;
+    }
+    .per-tbsp-title { font-size: 0.58rem; color: rgba(212,175,55,0.35); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 0.7rem; text-align: center; }
+    .stat-row { display: flex; gap: 0.6rem; }
+    .stat-box {
+      border-radius: 0.85rem; padding: 0.9rem 0.6rem;
+      text-align: center; flex: 1; min-width: 0;
+    }
+    .stat-value { font-size: 1.35rem; font-weight: 800; line-height: 1; }
+    .stat-unit { font-size: 0.55rem; margin-top: 0.2rem; letter-spacing: 0.04em; }
+    .stat-label { font-size: 0.62rem; margin-top: 0.1rem; text-transform: uppercase; letter-spacing: 0.1em; }
+
+    .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-bottom: 0.9rem; }
+    .mini-box {
+      background: rgba(255,255,255,0.015);
+      border: 1px solid rgba(212,175,55,0.07);
+      border-radius: 0.75rem; padding: 0.85rem 0.9rem;
+    }
+    .mini-title { font-size: 0.56rem; color: rgba(212,175,55,0.3); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.55rem; }
+    .mini-row { font-size: 0.78rem; margin-top: 0.2rem; }
+
+    .summary-box {
+      background: rgba(0,0,0,0.25); border-radius: 0.75rem;
+      padding: 0.85rem 1rem; font-size: 0.71rem;
+      color: rgba(212,175,55,0.4); line-height: 1.9;
+    }
+    .summary-box span { color: #f5e6a3; }
+    .disclaimer { font-size: 0.56rem; color: rgba(212,175,55,0.18); text-align: center; margin-top: 1rem; line-height: 1.6; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-icon">🌿</div>
+    <h1>Highpoint Infusion Lab</h1>
+    <p class="subtitle">Batch Dosage Calculator</p>
+  </div>
+
+  <!-- Form Card -->
+  <div class="card">
+
+    <!-- Strain -->
+    <div style="margin-bottom:1.4rem">
+      <label class="field-label">Strain Name</label>
+      <input type="text" id="strain" placeholder="e.g. Gelato, OG Kush, Blue Dream…" />
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Flower + Oil -->
+    <div class="grid-2" style="margin-bottom:1.4rem">
+      <div>
+        <label class="field-label">Flower (grams)</label>
+        <input type="number" id="flowerG" min="0" step="0.5" placeholder="e.g. 14" />
+      </div>
+      <div>
+        <label class="field-label">Carrier (cups)</label>
+        <input type="number" id="oilCups" min="2" step="0.5" placeholder="min 2"
+          oninput="document.getElementById('oilWarn').style.display = (parseFloat(this.value) < 2 && this.value) ? 'block' : 'none'" />
+        <p id="oilWarn" class="warn-text" style="display:none">⚠ Minimum is 2 cups</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Carrier type -->
+    <div style="margin-bottom:1.4rem">
+      <label class="field-label">What are you infusing?</label>
+      <div class="carrier-grid" id="carrierGrid">
+        <button class="carrier-btn" data-id="butter"    onclick="selectCarrier(this)"><div class="carrier-emoji">🧈</div>Butter</button>
+        <button class="carrier-btn" data-id="coconut"   onclick="selectCarrier(this)"><div class="carrier-emoji">🥥</div>Coconut Oil</button>
+        <button class="carrier-btn" data-id="olive"     onclick="selectCarrier(this)"><div class="carrier-emoji">🫒</div>Olive Oil</button>
+        <button class="carrier-btn" data-id="avocado"   onclick="selectCarrier(this)"><div class="carrier-emoji">🥑</div>Avocado Oil</button>
+        <button class="carrier-btn" data-id="vegetable" onclick="selectCarrier(this)"><div class="carrier-emoji">🌻</div>Vegetable Oil</button>
+        <button class="carrier-btn" data-id="mct"       onclick="selectCarrier(this)"><div class="carrier-emoji">💧</div>MCT Oil</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Cannabinoids -->
+    <div style="margin-bottom:1.4rem">
+      <label class="field-label">Cannabinoid Profile</label>
+      <div class="grid-3" style="margin-top:0.5rem">
+        <div>
+          <label class="cann-label" style="color:rgba(134,239,172,0.4)">THC %</label>
+          <input type="number" id="thcPct" min="0" max="100" step="0.1" placeholder="e.g. 22"
+            style="color:#86efac; border-bottom-color:rgba(134,239,172,0.25)"
+            onfocus="this.style.borderBottomColor='rgba(134,239,172,0.8)'"
+            onblur="this.style.borderBottomColor='rgba(134,239,172,0.25)'" />
+        </div>
+        <div>
+          <label class="cann-label" style="color:rgba(147,197,253,0.4)">CBD %</label>
+          <input type="number" id="cbdPct" min="0" max="100" step="0.1" placeholder="e.g. 1"
+            style="color:#93c5fd; border-bottom-color:rgba(147,197,253,0.25)"
+            onfocus="this.style.borderBottomColor='rgba(147,197,253,0.8)'"
+            onblur="this.style.borderBottomColor='rgba(147,197,253,0.25)'" />
+        </div>
+        <div>
+          <label class="cann-label" style="color:rgba(196,181,253,0.4)">CBG %</label>
+          <input type="number" id="cbgPct" min="0" max="100" step="0.1" placeholder="e.g. 0.5"
+            style="color:#c4b5fd; border-bottom-color:rgba(196,181,253,0.25)"
+            onfocus="this.style.borderBottomColor='rgba(196,181,253,0.8)'"
+            onblur="this.style.borderBottomColor='rgba(196,181,253,0.25)'" />
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Settings -->
+    <div class="grid-2" style="align-items:flex-start">
+      <div>
+        <label class="field-label">Absorption Rate</label>
+        <select id="absorption">
+          <option value="0.60">60% — Conservative</option>
+          <option value="0.70" selected>70% — Standard</option>
+          <option value="0.80">80% — Optimal</option>
+          <option value="0.90">90% — Ideal</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Decarboxylated?</label>
+        <div class="toggle-group">
+          <button class="toggle-btn active" id="decarbYes" onclick="setDecarb(true)">✓ Yes</button>
+          <button class="toggle-btn" id="decarbNo" onclick="setDecarb(false)">✗ No</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div id="errorBox" class="error-box" style="display:none"></div>
+
+    <!-- Button -->
+    <button class="calc-btn" onclick="calculate()">Calculate Batch</button>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="result-header">
+      <div id="resultBadge" class="result-badge"></div>
+      <p class="result-sub">Batch Analysis</p>
+    </div>
+
+    <div class="per-tbsp-box">
+      <p class="per-tbsp-title">Per Tablespoon</p>
+      <div class="stat-row" id="statRow"></div>
+    </div>
+
+    <div class="mini-grid">
+      <div class="mini-box">
+        <p class="mini-title">Per Teaspoon</p>
+        <div id="miniTsp"></div>
+      </div>
+      <div class="mini-box">
+        <p class="mini-title">Per Cup</p>
+        <div id="miniCup"></div>
+      </div>
+    </div>
+
+    <div class="summary-box" id="summaryBox"></div>
+    <p class="disclaimer">Estimates only. Actual potency varies by strain, decarb method & infusion conditions.</p>
+  </div>
+
+</div>
+
+<script>
+  const TBSP_PER_CUP = 16;
+  let selectedCarrier = null;
+  let decarbOn = true;
+
+  const CARRIERS = {
+    butter:    { label: 'Butter',       emoji: '🧈' },
+    coconut:   { label: 'Coconut Oil',  emoji: '🥥' },
+    olive:     { label: 'Olive Oil',    emoji: '🫒' },
+    avocado:   { label: 'Avocado Oil',  emoji: '🥑' },
+    vegetable: { label: 'Vegetable Oil',emoji: '🌻' },
+    mct:       { label: 'MCT Oil',      emoji: '💧' },
+  };
+
+  function selectCarrier(btn) {
+    document.querySelectorAll('.carrier-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedCarrier = btn.dataset.id;
+  }
+
+  function setDecarb(val) {
+    decarbOn = val;
+    document.getElementById('decarbYes').classList.toggle('active', val);
+    document.getElementById('decarbNo').classList.toggle('active', !val);
+  }
+
+  function calcCannabinoid(pct, flowerG, oilTbsp, abs, decarbMult) {
+    if (!pct || parseFloat(pct) <= 0) return null;
+    const totalMg = flowerG * 1000 * (parseFloat(pct) / 100);
+    const activeMg = totalMg * decarbMult * abs;
+    return {
+      total:   activeMg,
+      perTbsp: activeMg / oilTbsp,
+      perTsp:  activeMg / oilTbsp / 3,
+      perCup:  activeMg / (oilTbsp / TBSP_PER_CUP),
+    };
+  }
+
+  function validate() {
+    const strain = document.getElementById('strain').value.trim();
+    const flowerG = parseFloat(document.getElementById('flowerG').value);
+    const oilCups = parseFloat(document.getElementById('oilCups').value);
+    const thcPct = parseFloat(document.getElementById('thcPct').value);
+    if (!strain) return 'Enter a strain name.';
+    if (!flowerG || flowerG <= 0) return 'Enter flower weight in grams.';
+    if (!selectedCarrier) return 'Select a carrier (butter, oil, etc.).';
+    if (isNaN(oilCups)) return 'Enter how many cups of carrier you\'re using.';
+    if (oilCups < 2) return 'Minimum is 2 cups of carrier.';
+    if (isNaN(thcPct) || thcPct <= 0) return 'Enter THC%.';
+    return null;
+  }
+
+  function statBoxHTML(label, value, r, g, b) {
+    return `
+      <div class="stat-box" style="background:rgba(${r},${g},${b},0.07);border:1px solid rgba(${r},${g},${b},0.2)">
+        <div class="stat-value" style="color:rgb(${r},${g},${b})">${value.toFixed(1)}</div>
+        <div class="stat-unit" style="color:rgba(${r},${g},${b},0.55)">mg/tbsp</div>
+        <div class="stat-label" style="color:rgba(${r},${g},${b},0.4)">${label}</div>
+      </div>`;
+  }
+
+  function miniRowHTML(label, value, hex) {
+    return `<div class="mini-row" style="color:${hex}">${label} <strong>${value.toFixed(1)} mg</strong></div>`;
+  }
+
+  function calculate() {
+    const err = validate();
+    const errBox = document.getElementById('errorBox');
+    if (err) {
+      errBox.textContent = '⚠ ' + err;
+      errBox.style.display = 'block';
+      document.getElementById('results').classList.remove('visible');
+      return;
+    }
+    errBox.style.display = 'none';
+
+    const strain   = document.getElementById('strain').value.trim();
+    const flowerG  = parseFloat(document.getElementById('flowerG').value);
+    const oilCups  = parseFloat(document.getElementById('oilCups').value);
+    const thcPct   = document.getElementById('thcPct').value;
+    const cbdPct   = document.getElementById('cbdPct').value;
+    const cbgPct   = document.getElementById('cbgPct').value;
+    const abs      = parseFloat(document.getElementById('absorption').value);
+    const decarbMult = decarbOn ? 1 : 0.15;
+    const oilTbsp  = oilCups * TBSP_PER_CUP;
+
+    const thc = calcCannabinoid(thcPct, flowerG, oilTbsp, abs, decarbMult);
+    const cbd = calcCannabinoid(cbdPct, flowerG, oilTbsp, abs, decarbMult);
+    const cbg = calcCannabinoid(cbgPct, flowerG, oilTbsp, abs, decarbMult);
+    const carrier = CARRIERS[selectedCarrier];
+
+    // Badge
+    let badge = `<span>${strain}</span>`;
+    if (carrier) badge += `<span class="badge-dot">·</span><span style="font-style:normal;font-size:0.95rem">${carrier.emoji}</span><span class="badge-carrier-label">${carrier.label}</span>`;
+    document.getElementById('resultBadge').innerHTML = badge;
+
+    // Per Tbsp stat boxes
+    let statHTML = '';
+    if (thc) statHTML += statBoxHTML('THC', thc.perTbsp, 134, 239, 172);
+    if (cbd) statHTML += statBoxHTML('CBD', cbd.perTbsp, 147, 197, 253);
+    if (cbg) statHTML += statBoxHTML('CBG', cbg.perTbsp, 196, 181, 253);
+    document.getElementById('statRow').innerHTML = statHTML;
+
+    // Per Tsp
+    let tspHTML = '';
+    if (thc) tspHTML += miniRowHTML('THC', thc.perTsp, '#86efac');
+    if (cbd) tspHTML += miniRowHTML('CBD', cbd.perTsp, '#93c5fd');
+    if (cbg) tspHTML += miniRowHTML('CBG', cbg.perTsp, '#c4b5fd');
+    document.getElementById('miniTsp').innerHTML = tspHTML;
+
+    // Per Cup
+    let cupHTML = '';
+    if (thc) cupHTML += miniRowHTML('THC', thc.perCup, '#86efac');
+    if (cbd) cupHTML += miniRowHTML('CBD', cbd.perCup, '#93c5fd');
+    if (cbg) cupHTML += miniRowHTML('CBG', cbg.perCup, '#c4b5fd');
+    document.getElementById('miniCup').innerHTML = cupHTML;
+
+    // Summary
+    let sumHTML = `
+      <div>🌿 Flower: <span>${flowerG}g</span></div>
+      <div>${carrier ? carrier.emoji : '🛢'} ${carrier ? carrier.label : 'Carrier'}: <span>${oilCups} cups (${oilTbsp} tbsp)</span></div>
+    `;
+    if (thc) sumHTML += `<div style="color:rgba(134,239,172,0.5)">Total THC: <span style="color:#86efac">${thc.total.toFixed(0)} mg</span></div>`;
+    if (cbd) sumHTML += `<div style="color:rgba(147,197,253,0.5)">Total CBD: <span style="color:#93c5fd">${cbd.total.toFixed(0)} mg</span></div>`;
+    if (cbg) sumHTML += `<div style="color:rgba(196,181,253,0.5)">Total CBG: <span style="color:#c4b5fd">${cbg.total.toFixed(0)} mg</span></div>`;
+    document.getElementById('summaryBox').innerHTML = sumHTML;
+
+    document.getElementById('results').classList.add('visible');
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+</script>
+</body>
+</html>
