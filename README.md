@@ -1,106 +1,143 @@
-# 🌿 Highpoint Infusion Lab
+# 🌿 HiPoint Infusion Lab
 
-A personal cannabis batch dosage calculator with built-in strain library, process efficiency tracking, and batch history.
+A personal cannabis batch dosage calculator with strain library, process efficiency tracking, batch history, cost tracking, and tools — built for home infusers.
 
 **Live site:** [https://jastremit.github.io/highpoint-infusion-calc/](https://jastremit.github.io/highpoint-infusion-calc/)
 
 ---
 
-## What it does
+## Overview
 
-Calculates precise THC/CBD/CBG dosage per tablespoon, teaspoon, and fl oz for home infusion batches — tuned to your specific machine, batch quality, and infusion process.
+A single-file web app that calculates precise THC/CBD/CBG dosage for home infusion batches. Tuned to real-world process loss for the Magical Butter Machine and LEVO II+. No installs, no accounts, works offline.
 
 ---
 
-## Features
+## Tabs
 
-### Strain library
-- 128 preloaded strains with full profiles (type, THC/CBD/CBG%, effects, terpenes, flavors)
+### 🧪 Calculator
+The main dosage calculator. Enter your batch details and get mg breakdowns per tablespoon, teaspoon, and fl oz.
+
+**Strain search:**
+- 2,267 strains from the Leafly public dataset — name, type, effects, flavors, terpenes
 - Live autocomplete as you type
-- Auto-fills cannabinoid percentages when a strain is selected
-- Add your own strains through the interface
+- Strain selection shows type, effects, and terpenes — **THC/CBD/CBG are never auto-filled**
+- You always enter your actual batch % from your dispensary label
+- Add your own strains via the **+ Add New Strain** button
 - Track which dispensary each batch came from
-- Duplicate detection — update existing or save as new batch
+- Duplicate detection — update existing or save as new batch with date label
 
-### Color-coded strain types
-- 💜 **Indica** — Purple
-- 💜→💚 **Indica-Dominant Hybrid** — Purple-to-green gradient
-- 💚 **Hybrid** — Green
-- 💚→❤️ **Sativa-Dominant Hybrid** — Green-to-red gradient
-- ❤️ **Sativa** — Red
-
-### Infusion inputs
+**Inputs:**
+- Strain name (searchable)
 - Flower weight (grams)
 - Carrier type: Butter, Coconut Oil, Olive Oil, Avocado Oil, Vegetable Oil, MCT Oil
-- Carrier amount (fl oz, minimum 16 oz)
-- THC, CBD, and CBG percentages
+- Carrier amount (fl oz, minimum 16)
+- THC, CBD, CBG % — entered from your actual batch label
 - Infusion machine: Magical Butter Machine or LEVO II+
 - Batch quality: Good / Average / Rough
 
-### Process efficiency (tuned to real-world workflow)
-Accounts for decarb loss, heat degradation, and cheesecloth strain loss.
+**Process efficiency** (tuned to MBM + LEVO II+ + cheesecloth straining):
 
 | Machine | Good | Average | Rough |
 |---|---|---|---|
 | Magical Butter Machine | 72% | 68% | 63% |
 | LEVO II+ | 68% | 65% | 60% |
 
-### Outputs
-- mg THC / CBD / CBG **per tablespoon**
+**Outputs:**
+- mg THC / CBD / CBG per tablespoon
 - mg per teaspoon
 - mg per fl oz
 - Total active cannabinoids across the full batch
-- Strain effects + terpene profile displayed with results
+- Strain effects and terpene profile
 - Batch summary (machine, efficiency %, carrier, flower weight)
+- Notes field + **Save to History** button
 
-### Data management
-- **Export** saved strains as JSON (dated filename)
-- **Import** JSON to restore or share strain libraries
-- Strains saved locally to browser storage for persistence
+---
+
+### 📋 History
+Log of every saved batch.
+
+- Strain, THC%, mg/tbsp, flower weight, oil amount, carrier, machine, efficiency, dispensary
+- Your notes per batch
+- Delete individual entries
+- **Export as printable PDF** for records
+
+---
+
+### 🛠 Tools
+
+**⏱ Decarb Timer**
+- 40 min countdown tuned to 220°F oven decarb (MBM method)
+- Start / Pause / Resume / Reset
+- Browser notification when complete
+
+**💰 Cost Tracker**
+- Enter grams purchased + total cost paid + THC% + carrier oz
+- Calculates: cost per gram, cost per mg THC, mg THC per tbsp of finished oil, input cost per tbsp
+- Useful for pricing gummies, honey, and other infused products
+
+**🔄 Reverse Dose Calculator**
+- Enter desired mg per piece + number of pieces + THC%
+- Calculates how many grams of flower you need and minimum carrier amount
+
+**🍪 Recipe Scaler**
+- Enter tbsp of oil used in recipe + number of servings + mg per tbsp (from calculator)
+- Calculates mg THC per serving
+
+---
+
+### 📚 Library
+Manage your custom saved strains — view and delete entries you've added.
+
+---
+
+## Strain Color Coding
+
+| Type | Color |
+|---|---|
+| Indica | 💜 Purple |
+| Indica-Dom Hybrid | 💜→💚 Purple-to-green |
+| Hybrid | 💚 Green |
+| Sativa-Dom Hybrid | 💚→❤️ Green-to-red |
+| Sativa | ❤️ Red |
+
+---
+
+## Data Management
+
+- **Export saved strains** as JSON (dated filename) — use to back up your custom library
+- **Import JSON** — restore or transfer your strain library between devices
+- **Batch history** stored in browser localStorage (up to 50 batches)
+- Custom strains persist via browser localStorage
 
 ---
 
 ## Usage
 
-### Option 1: Use the live site
+### Option 1 — Live site
 Visit [https://jastremit.github.io/highpoint-infusion-calc/](https://jastremit.github.io/highpoint-infusion-calc/)
 
-### Option 2: Use offline
-Download `index.html` and open in any browser. No installs, no dependencies, works completely offline.
+### Option 2 — Offline
+Download `index.html` and open in any browser. No internet required.
 
 ---
 
-## Process this calculator is tuned for
+## Process This Calculator Is Tuned For
 
-1. **Decarb:** 220°F for 40 minutes in oven (for MBM) or inside machine (for LEVO)
-2. **Infusion:** Either Magical Butter Machine or LEVO II+
-3. **Strain:** Cheesecloth after infusion (built-in LEVO strainer is not used — too many particles pass through)
+1. **Decarb:** 220°F for 40 minutes in oven (MBM) or inside machine (LEVO)
+2. **Infusion:** Magical Butter Machine or LEVO II+
+3. **Strain:** Cheesecloth after infusion (LEVO built-in strainer not used)
 4. **Minimum batch:** 16 fl oz of carrier
 
 ---
 
-## Roadmap
+## Tech
 
-Features under consideration:
-
-- Batch history log (save past calculations with dates)
-- Reverse dose calculator ("I want X mg per piece, how much oil per piece?")
-- Recipe scaler
-- Cost tracking per mg THC
-- Edit/delete saved strains
-- Notes field per batch
-- PDF export of batch records
-- Built-in decarb timer
-
----
-
-## Tech notes
-
-- Pure HTML/CSS/JS — no frameworks, no build step
-- Strain library stored in-file as JSON
-- Custom strains persist via browser localStorage
+- Pure HTML / CSS / JavaScript — no frameworks, no build step, no dependencies
+- 2,267 strain dataset embedded from Leafly public data (Kaggle)
+- Custom strains and batch history stored in browser localStorage
+- Single file — easy to update, version control, and host anywhere
 - Hosted free on GitHub Pages
 
 ---
 
-*Built for personal use by Jas · HiPoint Aesthetics*
+*Built for personal use · HiPoint Aesthetics · Portland, OR*
