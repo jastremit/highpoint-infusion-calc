@@ -545,13 +545,46 @@
     <!-- Carrier type -->
     <div style="margin-bottom:1.4rem">
       <label class="field-label">What are you infusing?</label>
-      <div class="carrier-grid">
+      <div class="carrier-grid" style="grid-template-columns:repeat(3,1fr)">
         <button class="carrier-btn" data-id="butter"    onclick="selectCarrier(this)"><div class="carrier-emoji">🧈</div>Butter</button>
         <button class="carrier-btn" data-id="coconut"   onclick="selectCarrier(this)"><div class="carrier-emoji">🥥</div>Coconut Oil</button>
         <button class="carrier-btn" data-id="olive"     onclick="selectCarrier(this)"><div class="carrier-emoji">🫒</div>Olive Oil</button>
         <button class="carrier-btn" data-id="avocado"   onclick="selectCarrier(this)"><div class="carrier-emoji">🥑</div>Avocado Oil</button>
         <button class="carrier-btn" data-id="vegetable" onclick="selectCarrier(this)"><div class="carrier-emoji">🌻</div>Vegetable Oil</button>
         <button class="carrier-btn" data-id="mct"       onclick="selectCarrier(this)"><div class="carrier-emoji">💧</div>MCT Oil</button>
+        <button class="carrier-btn" data-id="honey"     onclick="selectCarrier(this)"><div class="carrier-emoji">🍯</div>Honey</button>
+        <button class="carrier-btn" data-id="tincture"  onclick="selectCarrier(this)"><div class="carrier-emoji">🧪</div>Tincture</button>
+        <button class="carrier-btn" data-id="glycerin"  onclick="selectCarrier(this)"><div class="carrier-emoji">🌿</div>Veg Glycerin</button>
+      </div>
+
+      <!-- MBM Settings Card — populates on carrier select -->
+      <div id="mbmSettings" style="display:none;margin-top:0.85rem;
+        background:rgba(212,175,55,0.04);border:1px solid rgba(212,175,55,0.12);
+        border-radius:0.85rem;padding:0.85rem 1rem;">
+        <div style="font-size:0.58rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;
+          color:rgba(212,175,55,0.5);margin-bottom:0.6rem;">⚗️ MBM Settings for <span id="mbmCarrierName" style="color:#f5e6a3"></span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.6rem;">
+          <div style="text-align:center;background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.15);border-radius:0.6rem;padding:0.6rem 0.4rem;">
+            <div style="font-size:1.1rem;font-weight:800;color:#fbbf24;" id="mbmTemp">160°F</div>
+            <div style="font-size:0.55rem;color:rgba(212,175,55,0.5);margin-top:0.15rem;letter-spacing:0.05em;">TEMPERATURE</div>
+          </div>
+          <div style="text-align:center;background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.15);border-radius:0.6rem;padding:0.6rem 0.4rem;">
+            <div style="font-size:1.1rem;font-weight:800;color:#86efac;" id="mbmTime">2 hrs</div>
+            <div style="font-size:0.55rem;color:rgba(212,175,55,0.5);margin-top:0.15rem;letter-spacing:0.05em;">INFUSE TIME</div>
+          </div>
+          <div style="text-align:center;background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.15);border-radius:0.6rem;padding:0.6rem 0.4rem;">
+            <div style="font-size:0.75rem;font-weight:800;color:#93c5fd;line-height:1.2;" id="mbmButton">2 HR<br/>BUTTER</div>
+            <div style="font-size:0.55rem;color:rgba(212,175,55,0.5);margin-top:0.15rem;letter-spacing:0.05em;">PRESS BUTTON</div>
+          </div>
+        </div>
+        <div id="mbmWarning" style="display:none;margin-top:0.6rem;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:0.5rem;padding:0.5rem 0.75rem;font-size:0.65rem;color:#fca5a5;">
+          ⚠️ <span id="mbmWarningText"></span>
+        </div>
+        <p style="font-size:0.58rem;color:rgba(212,175,55,0.3);margin-top:0.6rem;font-style:italic;" id="mbmNote"></p>
+        <a id="mbmSourceLink" href="https://magicalbutter.com/blogs/base-recipes" target="_blank"
+          style="font-size:0.56rem;color:rgba(212,175,55,0.35);text-decoration:none;display:inline-block;margin-top:0.25rem;">
+          🔗 View full recipe on MagicalButter.com
+        </a>
       </div>
     </div>
 
@@ -949,6 +982,9 @@ const CARRIERS = {
   avocado:   { label:'Avocado Oil',   emoji:'🥑' },
   vegetable: { label:'Vegetable Oil', emoji:'🌻' },
   mct:       { label:'MCT Oil',       emoji:'💧' },
+  honey:     { label:'Honey',         emoji:'🍯' },
+  tincture:  { label:'Tincture',      emoji:'🧪' },
+  glycerin:  { label:'Veg Glycerin',  emoji:'🌿' },
 };
 const TYPE_CLASS = {
   'indica':         'tag-indica',
@@ -1030,9 +1066,62 @@ function onStrainKey(e) {
 // ─────────────────────────────────────────────
 // SELECTORS
 // ─────────────────────────────────────────────
+// MBM settings per carrier — sourced from magicalbutter.com official recipes
+const MBM_SETTINGS = {
+  butter:    { temp:'160°F', time:'2 hrs', button:'2 HR\nBUTTER', warning:null,
+    note:'Add 1 tbsp sunflower lecithin per cup of butter for better absorption. Use real butter — not margarine.',
+    url:'https://magicalbutter.com/blogs/base-recipes/magical-butter' },
+  coconut:   { temp:'160°F', time:'2 hrs', button:'2 HR\nOIL', warning:null,
+    note:'Use liquid coconut oil — do not use cold or solid coconut oil. Unrefined has a strong coconut flavor; refined is neutral.',
+    url:'https://magicalbutter.com/blogs/base-recipes/magical-coconut-oil' },
+  olive:     { temp:'160°F', time:'1 hr',  button:'1 HR\nOIL', warning:null,
+    note:'1 hour cycle is sufficient for olive oil. Use extra virgin or light olive oil.',
+    url:'https://magicalbutter.com/blogs/base-recipes/magical-olive-oil' },
+  avocado:   { temp:'160°F', time:'1 hr',  button:'1 HR\nOIL', warning:null,
+    note:'Avocado oil has a high smoke point and neutral flavor — great for edibles and topicals.',
+    url:'https://magicalbutter.com/blogs/base-recipes' },
+  vegetable: { temp:'160°F', time:'1 hr',  button:'1 HR\nOIL', warning:null,
+    note:'Standard vegetable oil works well. MagicalButter recommends avoiding canola, corn, and soybean oils where possible.',
+    url:'https://magicalbutter.com/blogs/base-recipes' },
+  mct:       { temp:'160°F', time:'1 hr',  button:'1 HR\nOIL', warning:null,
+    note:'MCT oil absorbs fastest and has the most neutral flavor. Best choice for gummies and tinctures.',
+    url:'https://magicalbutter.com/blogs/base-recipes/magical-mct-oil' },
+  honey:     { temp:'130°F', time:'1 hr',  button:'1 HR\nOIL', warning:null,
+    note:'Lower temp (130°F) protects honey\'s natural properties. Store finished infusion in a mason jar or glass container.',
+    url:'https://magicalbutter.com/blogs/base-recipes/magical-honey' },
+  tincture:  { temp:'130°F', time:'4 hrs', button:'4 HR\nTINCTURE',
+    warning:'FLAMMABLE — never use an open flame or gas burner. No smoking around this process. Use electrical or induction cooktop only.',
+    note:'Use high-proof grain alcohol (190 proof / Everclear recommended). Use 8 HR button for stronger flavor and deeper intensity. Vegetable glycerin may be substituted but will be ~⅓ as potent.',
+    url:'https://magicalbutter.com/blogs/base-recipes/magical-tincture' },
+  glycerin:  { temp:'130°F', time:'4 hrs', button:'4 HR\nTINCTURE', warning:null,
+    note:'Vegetable glycerin tinctures are ~⅓ as potent as alcohol tinctures for the same amount of botanicals. Non-flammable alternative to alcohol. Do not add water or lecithin.',
+    url:'https://magicalbutter.com/blogs/base-recipes/magical-vegetable-glycerin' },
+};
+
 function selectCarrier(btn) {
   document.querySelectorAll('.carrier-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active'); selectedCarrier = btn.dataset.id;
+  btn.classList.add('active');
+  selectedCarrier = btn.dataset.id;
+
+  // Populate MBM settings card
+  const s = MBM_SETTINGS[selectedCarrier];
+  if (s) {
+    document.getElementById('mbmCarrierName').textContent = btn.textContent.trim();
+    document.getElementById('mbmTemp').textContent   = s.temp;
+    document.getElementById('mbmTime').textContent   = s.time;
+    document.getElementById('mbmButton').innerHTML   = s.button.replace('\n','<br/>');
+    document.getElementById('mbmNote').textContent   = s.note;
+    document.getElementById('mbmSourceLink').href    = s.url;
+    // Warning (tincture only)
+    const warnEl = document.getElementById('mbmWarning');
+    if (s.warning) {
+      document.getElementById('mbmWarningText').textContent = s.warning;
+      warnEl.style.display = 'block';
+    } else {
+      warnEl.style.display = 'none';
+    }
+    document.getElementById('mbmSettings').style.display = 'block';
+  }
 }
 function selectMachine(btn) {
   document.querySelectorAll('.machine-btn').forEach(b => b.classList.remove('active'));
