@@ -4,6 +4,27 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Highpoint Infusion Lab</title>
+
+  <!-- PWA Meta -->
+  <meta name="application-name" content="HiPoint Lab"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="HiPoint Lab"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="theme-color" content="#0f0a0f"/>
+  <link rel="manifest" href="manifest.json"/>
+
+  <!-- PWA Icons (inline SVG as data URI for self-contained install) -->
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230f0a0f'/%3E%3Ccircle cx='256' cy='256' r='180' fill='none' stroke='%23d4af37' stroke-width='12'/%3E%3Ctext x='256' y='300' font-family='Georgia' font-size='180' text-anchor='middle' fill='%23d4af37'%3E🌿%3C/text%3E%3C/svg%3E"/>
+
+  <script>
+    // Register service worker for PWA offline support
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      });
+    }
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -493,6 +514,7 @@
     <button class="tab-btn" onclick="switchTab('history')" id="tab-history">📋 History</button>
     <button class="tab-btn" onclick="switchTab('tools')" id="tab-tools">🛠 Tools</button>
     <button class="tab-btn" onclick="switchTab('library')" id="tab-library">📚 Library</button>
+    <button class="tab-btn" onclick="switchTab('recipes')" id="tab-recipes">🍳 Recipes</button>
   </div>
 
   <!-- Calculator Tab -->
@@ -819,6 +841,165 @@
     </div>
   </div>
 
+  <!-- ── RECIPES TAB ── -->
+  <div class="tab-panel" id="panel-recipes">
+
+    <!-- Active batch banner -->
+    <div id="activeBatchBanner" style="display:none;margin-bottom:0.85rem;
+      background:rgba(134,239,172,0.06);border:1px solid rgba(134,239,172,0.18);
+      border-radius:0.85rem;padding:0.7rem 1rem">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:0.58rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;
+            color:rgba(134,239,172,0.5);margin-bottom:0.2rem">⚗️ Active Batch — pre-filled in all recipes</div>
+          <div id="activeBatchDetails" style="font-size:0.78rem;color:#f5e6a3;font-weight:700"></div>
+          <div id="activeBatchMeta" style="font-size:0.6rem;color:rgba(134,239,172,0.5);margin-top:0.15rem"></div>
+        </div>
+        <button onclick="clearActiveBatch()" style="background:none;border:none;
+          color:rgba(134,239,172,0.3);font-size:0.7rem;cursor:pointer;padding:0;
+          font-family:inherit;transition:color 0.15s;flex-shrink:0;margin-left:0.5rem"
+          onmouseover="this.style.color='rgba(239,68,68,0.6)'"
+          onmouseout="this.style.color='rgba(134,239,172,0.3)'">✕ Clear</button>
+      </div>
+    </div>
+
+    <!-- Search bar + Add button -->
+    <div style="display:flex;gap:0.5rem;margin-bottom:1rem;align-items:center">
+      <input type="text" id="recipeSearch" placeholder="🔍  Search recipes, ingredients, effects…"
+        oninput="filterRecipes()"
+        style="flex:1;background:rgba(212,175,55,0.04);border:1px solid rgba(212,175,55,0.15);
+          border-radius:0.85rem;color:#f5e6a3;font-family:inherit;font-size:0.85rem;
+          padding:0.7rem 1rem;outline:none;box-sizing:border-box;transition:border-color 0.2s"
+        onfocus="this.style.borderColor='rgba(212,175,55,0.5)'"
+        onblur="this.style.borderColor='rgba(212,175,55,0.15)'" />
+      <button onclick="openAddRecipeModal()" style="
+        background:linear-gradient(135deg,rgba(212,175,55,0.2),rgba(212,175,55,0.1));
+        border:1px solid rgba(212,175,55,0.35);border-radius:0.85rem;
+        color:#f5e6a3;font-family:inherit;font-size:0.62rem;font-weight:700;
+        letter-spacing:0.1em;padding:0.7rem 0.9rem;cursor:pointer;white-space:nowrap;
+        transition:all 0.18s" onmouseover="this.style.background='rgba(212,175,55,0.25)'"
+        onmouseout="this.style.background='linear-gradient(135deg,rgba(212,175,55,0.2),rgba(212,175,55,0.1))'">
+        + Add
+      </button>
+    </div>
+
+    <!-- Category filters -->
+    <div id="recipeCatFilters" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1.25rem"></div>
+
+    <!-- Recipe list -->
+    <div id="recipeList"></div>
+
+    <!-- Recipe detail modal anchor -->
+  </div>
+
+</div>
+
+<!-- ── ADD CUSTOM RECIPE MODAL ── -->
+<div class="modal-overlay" id="addRecipeModal" onclick="if(event.target===this)closeAddRecipeModal()">
+  <div class="modal" style="position:relative;max-width:520px">
+    <button class="modal-close" onclick="closeAddRecipeModal()">×</button>
+    <div class="modal-title">Add Your Recipe</div>
+    <p class="modal-sub">Saved to your device</p>
+
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:0.75rem;margin-bottom:0.85rem">
+      <div class="field">
+        <label class="field-label">Recipe Name</label>
+        <input type="text" id="arName" placeholder="e.g. Whipped Weed Honey" />
+      </div>
+      <div class="field">
+        <label class="field-label">Emoji</label>
+        <input type="text" id="arEmoji" placeholder="🍯" maxlength="2" style="font-size:1.4rem;text-align:center" />
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:0.85rem">
+      <label class="field-label">Category</label>
+      <select id="arCat">
+        <option value="My Recipes">My Recipes</option>
+        <option value="Base Recipes">Base Recipes</option>
+        <option value="Body Butter">Body Butter</option>
+        <option value="Infused Meals">Infused Meals</option>
+      </select>
+    </div>
+
+    <div class="field" style="margin-bottom:0.85rem">
+      <label class="field-label">Description (one line)</label>
+      <input type="text" id="arIntro" placeholder="e.g. Smooth honey infusion — great on toast and in tea" />
+    </div>
+
+    <div class="field" style="margin-bottom:0.85rem">
+      <label class="field-label">Difficulty</label>
+      <select id="arDifficulty">
+        <option value="Easy">Easy</option>
+        <option value="Intermediate">Intermediate</option>
+        <option value="Advanced">Advanced</option>
+      </select>
+    </div>
+
+    <div class="field" style="margin-bottom:0.85rem">
+      <label class="field-label">Prep / Cook Time</label>
+      <input type="text" id="arTime" placeholder="e.g. 20 min, 1 hr" />
+    </div>
+
+    <!-- Infused ingredient -->
+    <div style="background:rgba(212,175,55,0.04);border:1px solid rgba(212,175,55,0.12);border-radius:0.75rem;padding:0.85rem;margin-bottom:0.85rem">
+      <label class="field-label" style="margin-bottom:0.6rem">Infused Ingredient</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+        <div class="field">
+          <label class="field-label">Amount (tbsp)</label>
+          <input type="number" id="arInfusedTbsp" min="0" step="0.5" placeholder="e.g. 2" style="color:#86efac" />
+        </div>
+        <div class="field">
+          <label class="field-label">What (carrier)</label>
+          <input type="text" id="arInfusedCarrier" placeholder="e.g. coconut oil" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Yield + servings -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.85rem">
+      <div class="field">
+        <label class="field-label">Total Yield</label>
+        <input type="text" id="arYield" placeholder="e.g. ½ cup, 24 cookies" />
+      </div>
+      <div class="field">
+        <label class="field-label">Default Servings</label>
+        <input type="number" id="arServings" min="1" step="1" placeholder="e.g. 8" />
+      </div>
+    </div>
+
+    <!-- Ingredients list -->
+    <div class="field" style="margin-bottom:0.85rem">
+      <label class="field-label">Ingredients</label>
+      <div id="arIngList"></div>
+      <button onclick="addArRow('ing')" style="width:100%;background:transparent;border:1px dashed rgba(212,175,55,0.2);border-radius:0.6rem;color:rgba(212,175,55,0.45);font-family:inherit;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.5rem;cursor:pointer;margin-top:0.35rem;transition:all 0.15s" onmouseover="this.style.borderColor='rgba(212,175,55,0.45)'" onmouseout="this.style.borderColor='rgba(212,175,55,0.2)'">+ Add Ingredient</button>
+    </div>
+
+    <!-- Steps list -->
+    <div class="field" style="margin-bottom:0.85rem">
+      <label class="field-label">Steps</label>
+      <div id="arStepList"></div>
+      <button onclick="addArRow('step')" style="width:100%;background:transparent;border:1px dashed rgba(212,175,55,0.2);border-radius:0.6rem;color:rgba(212,175,55,0.45);font-family:inherit;font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:0.5rem;cursor:pointer;margin-top:0.35rem;transition:all 0.15s" onmouseover="this.style.borderColor='rgba(212,175,55,0.45)'" onmouseout="this.style.borderColor='rgba(212,175,55,0.2)'">+ Add Step</button>
+    </div>
+
+    <div class="field" style="margin-bottom:0.85rem">
+      <label class="field-label">Notes (optional)</label>
+      <textarea id="arNotes" placeholder="Tips, variations, storage info…" style="background:rgba(212,175,55,0.03);border:1px solid rgba(212,175,55,0.15);border-radius:0.6rem;color:#f5e6a3;font-family:inherit;font-size:0.78rem;padding:0.6rem 0.75rem;resize:vertical;min-height:60px;width:100%;outline:none"></textarea>
+    </div>
+
+    <div id="arError" style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.18);border-radius:0.6rem;padding:0.6rem 1rem;font-size:0.7rem;color:#fca5a5;display:none;margin-bottom:0.75rem"></div>
+
+    <div style="display:flex;gap:0.6rem">
+      <button onclick="closeAddRecipeModal()" style="flex:1;padding:0.75rem;border-radius:0.75rem;background:transparent;border:1px solid rgba(212,175,55,0.2);color:rgba(212,175,55,0.6);font-family:inherit;font-size:0.68rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer">Cancel</button>
+      <button onclick="saveCustomRecipe()" style="flex:1;padding:0.75rem;border-radius:0.75rem;background:linear-gradient(135deg,#d4af37,#9a7020);border:none;color:#0c0a04;font-family:inherit;font-size:0.68rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer">Save Recipe</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="recipeDetailModal" onclick="if(event.target===this)closeRecipeDetail()">
+  <div class="modal" style="position:relative;max-width:520px">
+    <button class="modal-close" onclick="closeRecipeDetail()">×</button>
+    <div id="recipeDetailContent"></div>
+  </div>
 </div>
 
 <!-- Add Strain Modal -->
@@ -1254,6 +1435,26 @@ function calculate() {
 
   document.getElementById('results').classList.add('visible');
   document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' });
+
+  // ── Save active batch for recipe dosing pre-fill ──
+  if (thc && thc.perTbsp > 0) {
+    const activeBatch = {
+      mgPerTbsp:    parseFloat(thc.perTbsp.toFixed(2)),
+      strain:       strain || 'Unknown Strain',
+      carrier:      carrier ? carrier.label : selectedCarrier,
+      carrierEmoji: carrier ? carrier.emoji : '🫙',
+      thcPct:       thcPct,
+      flowerG:      flowerG,
+      oilOz:        oilOz,
+      machine:      machineLabel,
+      efficiency:   Math.round(efficiency * 100),
+      savedAt:      new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),
+    };
+    try { localStorage.setItem('hpActiveBatch', JSON.stringify(activeBatch)); } catch(e) {}
+    window._lastMgPerTbsp = activeBatch.mgPerTbsp;
+    // Refresh banner if recipes tab is visible
+    renderActiveBatchBanner();
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -1550,7 +1751,1180 @@ function switchTab(name) {
   document.getElementById('panel-'+name).classList.add('active');
   if (name === 'history') renderHistory();
   if (name === 'library') renderLibrary();
+  if (name === 'recipes') initRecipes();
 }
+
+// ─────────────────────────────────────────────
+// RECIPE DATABASE
+// ─────────────────────────────────────────────
+const RECIPES = [
+
+  // ── BASE RECIPES (MagicalButter official) ──
+  { id:'r1', cat:'Base Recipes', emoji:'🧈', name:'Infused Butter',
+    time:'2 hrs', temp:'160°F', button:'2 HR BUTTER', difficulty:'Easy',
+    tags:['mbm','butter','base','edibles'],
+    intro:'The most versatile infused base. Use in baked goods, toast, sauces, and more.',
+    ingredients:[
+      '2–5 cups clarified butter',
+      '14–28g decarboxylated botanicals per cup',
+      '1 tbsp sunflower lecithin per cup (recommended)',
+    ],
+    steps:[
+      'Decarboxylate your flower in oven at 220°F for 40 minutes.',
+      'Add butter and botanicals to MBM. Secure lid.',
+      'Set to 160°F and press the 2 HR BUTTER button.',
+      'After cycle, strain through filter bag into Butter Tray or mold.',
+      'Refrigerate until solid. Stores up to 4 weeks refrigerated, 3 months frozen.',
+    ],
+    notes:'Do not use margarine — it contains water and stabilizers that interfere with infusion. Real butter only.',
+    source:'magicalbutter.com/blogs/base-recipes/magical-butter' },
+
+  { id:'r2', cat:'Base Recipes', emoji:'🥥', name:'Infused Coconut Oil',
+    time:'2 hrs', temp:'160°F', button:'2 HR OIL', difficulty:'Easy',
+    tags:['mbm','coconut oil','base','edibles','topicals'],
+    intro:'Incredibly versatile — use in edibles, topicals, or as a salve base.',
+    ingredients:[
+      '2–5 cups liquid coconut oil',
+      '7–14g decarboxylated botanicals per cup',
+      '1 tbsp sunflower lecithin per cup (optional but recommended)',
+    ],
+    steps:[
+      'Decarboxylate flower at 220°F for 40 minutes.',
+      'Make sure coconut oil is in liquid form — warm it first if needed.',
+      'Add oil and botanicals to MBM. Secure lid.',
+      'Set to 160°F and press the 2 HR OIL button.',
+      'Strain through filter bag. Store in sealed glass container.',
+    ],
+    notes:'Unrefined coconut oil = strong coconut flavor. Refined = neutral taste. Do NOT use cold solid coconut oil in the machine.',
+    source:'magicalbutter.com/blogs/base-recipes/magical-coconut-oil' },
+
+  { id:'r3', cat:'Base Recipes', emoji:'🫒', name:'Infused Olive Oil',
+    time:'1 hr', temp:'160°F', button:'1 HR OIL', difficulty:'Easy',
+    tags:['mbm','olive oil','base','edibles','salad dressing'],
+    intro:'Great for salad dressings, pasta, and sautéing at low to medium heat.',
+    ingredients:[
+      '2–5 cups extra virgin or light olive oil',
+      '7–14g decarboxylated botanicals per cup',
+    ],
+    steps:[
+      'Decarboxylate flower at 220°F for 40 minutes.',
+      'Add oil and botanicals to MBM. Secure lid.',
+      'Set to 160°F and press the 1 HR OIL button.',
+      'Strain through filter bag into dark glass storage bottle.',
+      'Store in cool, dark place. Use within 1–2 months.',
+    ],
+    notes:'Use extra virgin for stronger flavor, light olive oil for neutral. Avoid high heat cooking with infused olive oil — it can degrade potency.',
+    source:'magicalbutter.com/blogs/base-recipes/magical-olive-oil' },
+
+  { id:'r4', cat:'Base Recipes', emoji:'💧', name:'Infused MCT Oil',
+    time:'1 hr', temp:'160°F', button:'1 HR OIL', difficulty:'Easy',
+    tags:['mbm','mct','base','gummies','tincture','fast absorbing'],
+    intro:'Best carrier for gummies and tinctures. Fastest absorption, most neutral flavor.',
+    ingredients:[
+      '2–5 cups MCT oil (refined preferred for neutral flavor)',
+      '7–14g decarboxylated botanicals per cup',
+    ],
+    steps:[
+      'Decarboxylate flower at 220°F for 40 minutes.',
+      'Add MCT oil and botanicals to MBM. Secure lid.',
+      'Set to 160°F and press the 1 HR OIL button.',
+      'Strain through filter bag into sealed glass jar.',
+      'Store away from light. MCT infusions last several months refrigerated.',
+    ],
+    notes:'MCT oil metabolizes faster than other oils, making it ideal for gummies and sublingual use. Refined MCT has zero flavor.',
+    source:'magicalbutter.com/blogs/base-recipes/magical-mct-oil' },
+
+  { id:'r5', cat:'Base Recipes', emoji:'🍯', name:'Infused Honey',
+    time:'1 hr', temp:'130°F', button:'1 HR OIL', difficulty:'Easy',
+    tags:['mbm','honey','base','tea','edibles','sweetener'],
+    intro:'Lower temp protects honey\'s natural enzymes. Use in tea, on toast, in desserts.',
+    ingredients:[
+      '2–5 cups raw or regular honey (liquid form)',
+      '7–14g decarboxylated botanicals per cup',
+    ],
+    steps:[
+      'Decarboxylate flower at 220°F for 40 minutes.',
+      'Warm honey gently until pourable if needed.',
+      'Add honey and botanicals to MBM. Secure lid.',
+      'Set to 130°F (lower temp to protect honey) and press the 1 HR OIL button.',
+      'Strain through filter bag into mason jar or glass container.',
+      'Store at room temp or refrigerate.',
+    ],
+    notes:'130°F is used instead of 160°F to protect honey\'s natural properties. Do not overheat.',
+    source:'magicalbutter.com/blogs/base-recipes/magical-honey' },
+
+  { id:'r6', cat:'Base Recipes', emoji:'🧪', name:'Alcohol Tincture',
+    time:'4–8 hrs', temp:'130°F', button:'4 HR TINCTURE', difficulty:'Intermediate',
+    tags:['mbm','tincture','alcohol','sublingual','fast acting'],
+    intro:'Fast-acting sublingual tincture. Use 190-proof grain alcohol (Everclear). 8 hours = stronger intensity.',
+    ingredients:[
+      '2–5 cups high-proof grain alcohol (190 proof recommended)',
+      '7–14g decarboxylated botanicals per cup',
+      'No water or lecithin',
+    ],
+    steps:[
+      'Decarboxylate flower at 220°F for 40 minutes.',
+      'Add alcohol and botanicals to MBM. Secure lid.',
+      'Set to 130°F and press the 4 HR TINCTURE button (or 8 HR for stronger).',
+      'Strain through filter bag into dark glass bottles.',
+      'Store in cool dark place. Alcohol tinctures last indefinitely if stored properly.',
+    ],
+    notes:'⚠️ FLAMMABLE — never use open flame or gas burner. Use electric or induction only. No smoking during this process.',
+    source:'magicalbutter.com/blogs/base-recipes/magical-tincture' },
+
+  { id:'r7', cat:'Base Recipes', emoji:'🌿', name:'Vegetable Glycerin Tincture',
+    time:'4–8 hrs', temp:'130°F', button:'4 HR TINCTURE', difficulty:'Easy',
+    tags:['mbm','tincture','glycerin','non-alcoholic','sublingual'],
+    intro:'Non-alcoholic alternative to tincture. Sweeter flavor. About 1/3 as potent as alcohol tincture.',
+    ingredients:[
+      '2–5 cups food-grade vegetable glycerin',
+      '7–14g decarboxylated botanicals per cup',
+      'No water or lecithin',
+    ],
+    steps:[
+      'Decarboxylate flower at 220°F for 40 minutes.',
+      'Add vegetable glycerin and botanicals to MBM. Secure lid.',
+      'Set to 130°F and press the 4 HR TINCTURE button.',
+      'Strain through filter bag into dark glass bottle.',
+      'Refrigerate for best results.',
+    ],
+    notes:'VG tinctures are ~⅓ as potent as alcohol tinctures for the same amount of botanicals. Non-flammable and alcohol-free.',
+    source:'magicalbutter.com/blogs/base-recipes/magical-vegetable-glycerin' },
+
+  // ── BODY BUTTER ──
+  { id:'r8', cat:'Body Butter', emoji:'🧴', name:'Classic Infused Body Butter',
+    time:'30 min', temp:'Low heat', button:null, difficulty:'Easy',
+    tags:['body butter','topical','skincare','shea','coconut'],
+    intro:'Rich, creamy body butter base. Customize with your favorite essential oils and scents.',
+    ingredients:[
+      '½ cup shea butter',
+      '¼ cup infused coconut oil',
+      '¼ cup sweet almond or jojoba oil',
+      '10–15 drops essential oil of choice (lavender, peppermint, rose)',
+      'Optional: 1 tsp vitamin E oil',
+    ],
+    steps:[
+      'Melt shea butter and coconut oil together using a double boiler on low heat.',
+      'Remove from heat and let cool until semi-solid (about 20–30 min, or put in fridge for 15 min).',
+      'Using a hand mixer, whip until fluffy and creamy (3–5 minutes).',
+      'Add almond oil, vitamin E, and essential oils. Whip another 1–2 minutes.',
+      'Spoon into straight-sided glass jars with silver/black lids.',
+      'Stores 3–6 months at room temp. Keep away from direct sunlight.',
+    ],
+    notes:'For a firmer butter, increase shea butter ratio. For lighter texture, add more almond oil. Add beeswax (1 tbsp melted) for a more solid consistency.',
+    source:null },
+
+  { id:'r9', cat:'Body Butter', emoji:'🌹', name:'Whipped Rose Body Butter',
+    time:'45 min', temp:'Low heat', button:null, difficulty:'Easy',
+    tags:['body butter','topical','rose','whipped','luxe'],
+    intro:'Light, airy texture with a floral rose scent. Excellent for dry skin.',
+    ingredients:[
+      '½ cup mango butter',
+      '¼ cup infused coconut oil',
+      '¼ cup rosehip seed oil',
+      '15 drops rose essential oil (or rose absolute)',
+      '5 drops geranium essential oil',
+      '1 tsp vitamin E oil',
+    ],
+    steps:[
+      'Melt mango butter gently over low heat until just liquid.',
+      'Stir in coconut oil. Cool in fridge 20–25 min until edges begin to solidify.',
+      'Whip with hand mixer until peaks form (about 5 minutes).',
+      'Fold in rosehip oil, vitamin E, and essential oils.',
+      'Whip another 2 min until fully incorporated and fluffy.',
+      'Jar immediately into 4oz glass containers.',
+    ],
+    notes:'Rosehip oil is rich in vitamins A and C — great for anti-aging. Mango butter gives a silkier feel than shea.',
+    source:null },
+
+  { id:'r10', cat:'Body Butter', emoji:'🌿', name:'Lavender + Eucalyptus Salve',
+    time:'20 min', temp:'Low heat', button:null, difficulty:'Easy',
+    tags:['salve','topical','lavender','eucalyptus','muscle relief'],
+    intro:'Firm salve great for muscle tension, dry heels, and cuticles.',
+    ingredients:[
+      '¼ cup infused coconut oil',
+      '¼ cup infused olive oil',
+      '2 tbsp beeswax pellets',
+      '10 drops lavender essential oil',
+      '8 drops eucalyptus essential oil',
+      '5 drops peppermint essential oil',
+    ],
+    steps:[
+      'Melt beeswax in a double boiler until fully liquid.',
+      'Add infused oils and stir to combine.',
+      'Remove from heat. Let cool 2–3 minutes but do not let it solidify.',
+      'Stir in essential oils quickly.',
+      'Pour immediately into small tins or 1oz glass jars.',
+      'Do not disturb until fully set (1–2 hours).',
+    ],
+    notes:'More beeswax = firmer salve. Less = softer balm. Test consistency by putting a small amount on a cold plate before pouring.',
+    source:null },
+
+  { id:'r11', cat:'Body Butter', emoji:'🍫', name:'Chocolate Mint Lotion Bar',
+    time:'25 min', temp:'Low heat', button:null, difficulty:'Easy',
+    tags:['lotion bar','topical','chocolate','mint','beeswax'],
+    intro:'Solid at room temp, melts on contact with skin. Great for hands and elbows.',
+    ingredients:[
+      '⅓ cup beeswax pellets',
+      '⅓ cup infused coconut oil',
+      '⅓ cup shea butter',
+      '10 drops peppermint essential oil',
+      '5 drops cocoa essential oil or 1 tsp cocoa powder for fragrance',
+    ],
+    steps:[
+      'Melt beeswax, coconut oil, and shea butter together in double boiler.',
+      'Stir until fully combined and smooth.',
+      'Cool for 3–5 minutes off heat. Add essential oils and stir.',
+      'Pour into silicone molds or lined muffin tin.',
+      'Let set at room temp or refrigerate for 30 min.',
+      'Pop out and wrap in wax paper for storage.',
+    ],
+    notes:'Equal parts beeswax:oil:butter gives a firm bar. Adjust ratios to your preference. Store in a cool place — these melt in heat.',
+    source:null },
+
+  // ── INFUSED MEALS — QUICK (30 min or less) ──
+  { id:'r12', cat:'Infused Meals', emoji:'🥑', name:'Infused Avocado Toast',
+    time:'10 min', temp:null, button:null, difficulty:'Easy',
+    tags:['quick','breakfast','avocado','toast','olive oil'],
+    intro:'The easiest infused meal. Dose-controlled and delicious.',
+    ingredients:[
+      '2 slices sourdough bread',
+      '1 ripe avocado',
+      '1–2 tsp infused olive oil',
+      'Red pepper flakes, everything bagel seasoning',
+      'Optional: poached egg, microgreens, lemon juice',
+    ],
+    steps:[
+      'Toast bread to desired level.',
+      'Mash avocado and season with salt, lemon juice, and red pepper flakes.',
+      'Spread onto toast.',
+      'Drizzle 1–2 tsp infused olive oil over top.',
+      'Add toppings of choice. Serve immediately.',
+    ],
+    notes:'Use your dosage calculator to determine how many mg is in 1 tsp of your infused oil. Drizzle only — do not cook with infused oil as heat degrades potency.',
+    source:null },
+
+  { id:'r13', cat:'Infused Meals', emoji:'🍝', name:'Infused Garlic Butter Pasta',
+    time:'20 min', temp:null, button:null, difficulty:'Easy',
+    tags:['quick','dinner','pasta','butter','garlic'],
+    intro:'Simple weeknight pasta. The infused butter is added at the end off heat to preserve potency.',
+    ingredients:[
+      '8 oz pasta of choice',
+      '3 cloves garlic, minced',
+      '2 tbsp regular butter (for cooking)',
+      '1–2 tbsp infused butter (added off heat)',
+      'Fresh parsley, parmesan, salt and pepper',
+      'Optional: red pepper flakes, lemon zest',
+    ],
+    steps:[
+      'Cook pasta to al dente per package. Reserve ½ cup pasta water.',
+      'In a pan, sauté garlic in regular butter 1–2 min on medium.',
+      'Add pasta and a splash of pasta water. Toss to coat.',
+      'REMOVE FROM HEAT before adding infused butter.',
+      'Stir in infused butter until melted and silky.',
+      'Top with parsley and parmesan. Serve immediately.',
+    ],
+    notes:'Always add infused butter OFF HEAT. Cooking with it will degrade THC. Regular butter handles the cooking — infused butter is for finishing.',
+    source:null },
+
+  { id:'r14', cat:'Infused Meals', emoji:'🥗', name:'Infused Honey Lemon Vinaigrette',
+    time:'5 min', temp:null, button:null, difficulty:'Easy',
+    tags:['quick','dressing','salad','honey','lemon','vinaigrette'],
+    intro:'A bright, tangy dressing. Easy to dose — each tablespoon = known mg.',
+    ingredients:[
+      '2 tbsp infused honey',
+      '3 tbsp olive oil (regular)',
+      '2 tbsp fresh lemon juice',
+      '1 tsp Dijon mustard',
+      'Salt and pepper to taste',
+      'Optional: 1 small garlic clove, minced',
+    ],
+    steps:[
+      'Whisk together lemon juice, Dijon, and garlic.',
+      'Slowly drizzle in olive oil while whisking continuously.',
+      'Stir in infused honey.',
+      'Season with salt and pepper.',
+      'Refrigerate up to 1 week. Shake before each use.',
+    ],
+    notes:'No heat required so full potency is preserved. Know your honey dosage per tbsp from the calculator before portioning.',
+    source:null },
+
+  { id:'r15', cat:'Infused Meals', emoji:'🧇', name:'Infused Banana Pancakes',
+    time:'25 min', temp:null, button:null, difficulty:'Easy',
+    tags:['quick','breakfast','pancakes','banana','butter'],
+    intro:'Fluffy, naturally sweetened pancakes. Infused butter goes in the batter — not the pan.',
+    ingredients:[
+      '1 cup all-purpose flour',
+      '1 tbsp sugar',
+      '2 tsp baking powder',
+      '1 ripe banana, mashed',
+      '¾ cup milk',
+      '1 egg',
+      '2 tbsp infused butter, melted and cooled',
+      '1 tbsp regular butter (for pan)',
+    ],
+    steps:[
+      'Mix dry ingredients in a bowl.',
+      'In another bowl, whisk mashed banana, milk, egg, and cooled infused butter.',
+      'Fold wet into dry — do not overmix (lumps are fine).',
+      'Heat pan to medium. Melt regular butter.',
+      'Pour ¼ cup batter per pancake. Cook 2–3 min per side.',
+      'Stack and serve with maple syrup.',
+    ],
+    notes:'Cool the infused butter before adding to batter — hot butter scrambles the egg. Infused butter added to the mix = controlled even dosing across all pancakes.',
+    source:null },
+
+  // ── FULL DINNERS ──
+  { id:'r16', cat:'Infused Meals', emoji:'🍗', name:'Infused Herb Roasted Chicken',
+    time:'1 hr 30 min', temp:null, button:null, difficulty:'Intermediate',
+    tags:['dinner','chicken','roasted','herb butter'],
+    intro:'Crispy skin, juicy inside. Infused herb butter goes under the skin and on at the end.',
+    ingredients:[
+      '1 whole chicken (3–4 lbs)',
+      '3 tbsp infused butter, softened',
+      '2 tbsp regular butter',
+      '4 garlic cloves',
+      'Fresh rosemary, thyme, and sage',
+      'Salt, pepper, olive oil',
+      '1 lemon, halved',
+    ],
+    steps:[
+      'Preheat oven to 425°F.',
+      'Mix regular butter with garlic and herbs for cooking butter.',
+      'Loosen skin on breast and thighs. Rub cooking butter under skin.',
+      'Rub outside with olive oil, salt, and pepper. Stuff with lemon.',
+      'Roast 1 hour 15 min or until juices run clear.',
+      'Remove from oven. REST 10 minutes before carving.',
+      'Melt infused butter and drizzle over carved chicken just before serving — NOT during roasting.',
+    ],
+    notes:'Never roast with infused butter — the oven temp destroys THC. Drizzle infused butter on the carved, rested bird right before eating.',
+    source:null },
+
+  { id:'r17', cat:'Infused Meals', emoji:'🍛', name:'Infused Coconut Curry',
+    time:'45 min', temp:null, button:null, difficulty:'Intermediate',
+    tags:['dinner','curry','coconut oil','thai','vegetarian'],
+    intro:'Warming, rich curry. Infused coconut oil is stirred in at the very end off heat.',
+    ingredients:[
+      '1 can (14 oz) coconut milk',
+      '2 tbsp red or yellow curry paste',
+      '2 cups vegetables of choice (bell pepper, zucchini, spinach)',
+      '1 can chickpeas, drained',
+      '1 cup vegetable broth',
+      '2 tbsp regular coconut oil (for cooking)',
+      '1–2 tbsp infused coconut oil (added off heat)',
+      'Jasmine rice for serving',
+      'Fresh cilantro, lime',
+    ],
+    steps:[
+      'Sauté curry paste in regular coconut oil 1–2 min on medium.',
+      'Add coconut milk and broth. Bring to a simmer.',
+      'Add vegetables and chickpeas. Simmer 20 min.',
+      'Taste and season with salt.',
+      'REMOVE FROM HEAT. Stir in infused coconut oil.',
+      'Serve over rice topped with cilantro and a squeeze of lime.',
+    ],
+    notes:'Infused coconut oil goes in OFF HEAT at the end. Simmering destroys THC. This dish doses evenly if divided into equal portions.',
+    source:null },
+
+  { id:'r18', cat:'Infused Meals', emoji:'🥩', name:'Infused Steak Butter',
+    time:'15 min + steak cook time', temp:null, button:null, difficulty:'Easy',
+    tags:['dinner','steak','compound butter','beef'],
+    intro:'A pat of infused compound butter melted over a hot steak — classic steakhouse style.',
+    ingredients:[
+      '4 tbsp infused butter, softened',
+      '1 garlic clove, minced',
+      '1 tsp fresh parsley',
+      '½ tsp fresh thyme',
+      'Pinch of sea salt',
+      'Your steak of choice',
+    ],
+    steps:[
+      'Mix softened infused butter with garlic, herbs, and salt.',
+      'Roll into a log in plastic wrap. Refrigerate until firm.',
+      'Cook steak to desired doneness using regular butter or oil in the pan.',
+      'REST the steak off heat for 5 minutes.',
+      'Slice a round of compound butter and place on top of rested steak.',
+      'The residual heat melts the butter — serve immediately.',
+    ],
+    notes:'The steak\'s heat melts the butter gently — not high enough to destroy THC. Always rest meat before adding infused butter.',
+    source:null },
+
+  // ── SNACKS & APPETIZERS ──
+  { id:'r19', cat:'Infused Meals', emoji:'🍿', name:'Infused Stovetop Popcorn',
+    time:'10 min', temp:null, button:null, difficulty:'Easy',
+    tags:['snack','popcorn','butter','quick'],
+    intro:'Movie night done right. Infused butter drizzled after popping.',
+    ingredients:[
+      '½ cup popcorn kernels',
+      '2 tbsp regular coconut oil or vegetable oil (for popping)',
+      '2–3 tbsp infused butter, melted',
+      'Salt, nutritional yeast, or seasoning of choice',
+    ],
+    steps:[
+      'Heat regular oil in a large pot over medium-high with 3 test kernels.',
+      'When test kernels pop, add remaining kernels. Cover with vented lid.',
+      'Shake pot frequently until popping slows to 2–3 seconds between pops.',
+      'Remove from heat. Pour into bowl.',
+      'Drizzle melted infused butter over popcorn and toss.',
+      'Season with salt immediately and serve.',
+    ],
+    notes:'Melt infused butter separately and drizzle — never pop with infused butter as the high heat destroys THC.',
+    source:null },
+
+  { id:'r20', cat:'Infused Meals', emoji:'🍞', name:'Infused Garlic Bread',
+    time:'15 min', temp:null, button:null, difficulty:'Easy',
+    tags:['snack','appetizer','garlic bread','butter','quick'],
+    intro:'Classic crowd pleaser. The infused butter is spread on before a brief oven toast.',
+    ingredients:[
+      '1 baguette or Italian loaf',
+      '4 tbsp infused butter, softened',
+      '3 cloves garlic, minced',
+      '2 tbsp fresh parsley',
+      'Optional: ¼ cup parmesan',
+    ],
+    steps:[
+      'Preheat oven to 375°F.',
+      'Mix softened infused butter with garlic and parsley.',
+      'Slice bread in half lengthwise.',
+      'Spread infused butter mixture generously on cut sides.',
+      'Optional: top with parmesan.',
+      'Bake 8–10 min until edges are golden.',
+      'Slice into portions and serve warm.',
+    ],
+    notes:'375°F for 8–10 min is brief enough that THC loss is minimal. Avoid longer cook times or higher temps which degrade potency faster.',
+    source:null },
+
+  { id:'r21', cat:'Infused Meals', emoji:'🧀', name:'Infused Mac & Cheese',
+    time:'30 min', temp:null, button:null, difficulty:'Easy',
+    tags:['snack','dinner','mac and cheese','comfort food','butter'],
+    intro:'Creamy comfort food. Infused butter goes into the cheese sauce off heat.',
+    ingredients:[
+      '8 oz elbow macaroni',
+      '2 tbsp regular butter',
+      '2 tbsp flour',
+      '1½ cups whole milk',
+      '2 cups shredded sharp cheddar',
+      '1–2 tbsp infused butter',
+      'Salt, pepper, paprika',
+    ],
+    steps:[
+      'Cook macaroni until al dente. Drain and set aside.',
+      'Melt regular butter in saucepan over medium. Whisk in flour, cook 1 min.',
+      'Slowly whisk in milk. Cook until thickened (3–4 min).',
+      'Remove from heat. Stir in cheese until melted.',
+      'Stir in infused butter off heat.',
+      'Season with salt, pepper, and paprika.',
+      'Fold in pasta. Serve immediately.',
+    ],
+    notes:'Remove from heat completely before adding infused butter. The cheese sauce is hot enough to melt it without active boiling.',
+    source:null },
+
+  // ── BODY BUTTER expanded lineup ──
+  { id:'r22', cat:'Body Butter', emoji:'🌸', name:'Mango Hibiscus Whipped Butter',
+    time:'45 min', temp:'Low heat', button:null, difficulty:'Easy',
+    tags:['body butter','topical','mango','hibiscus','whipped','tropical'],
+    intro:'Tropical-inspired whipped butter that melts into skin. Light and non-greasy.',
+    ingredients:[
+      '½ cup mango butter',
+      '¼ cup infused coconut oil',
+      '¼ cup argan oil',
+      '1 tsp hibiscus powder (for color and antioxidants)',
+      '10 drops ylang ylang essential oil',
+      '8 drops sweet orange essential oil',
+      '1 tsp vitamin E oil',
+    ],
+    steps:[
+      'Melt mango butter over very low heat until just liquid.',
+      'Stir in coconut oil until combined. Remove from heat.',
+      'Cool in fridge 20–25 min until edges solidify.',
+      'Whip with hand mixer 3–4 min until fluffy.',
+      'Add argan oil, hibiscus powder, vitamin E, and essential oils.',
+      'Whip another 2 min until fully incorporated.',
+      'Spoon into jars. Natural pink-coral color from hibiscus.',
+    ],
+    notes:'Hibiscus powder adds a beautiful natural blush color and is packed with antioxidants. Argan oil absorbs quickly and won\'t clog pores.',
+    source:null },
+
+  { id:'r23', cat:'Body Butter', emoji:'☀️', name:'Citrus Glow Body Oil',
+    time:'10 min', temp:'No heat', button:null, difficulty:'Easy',
+    tags:['body oil','topical','citrus','glow','lightweight'],
+    intro:'Lightweight dry oil that absorbs fast and leaves a subtle glow. No greasiness.',
+    ingredients:[
+      '½ cup infused jojoba oil (or sweet almond oil)',
+      '¼ cup rosehip seed oil',
+      '¼ cup dry squalane oil',
+      '15 drops blood orange essential oil',
+      '8 drops lemon essential oil',
+      '5 drops grapefruit essential oil',
+      '1 tsp vitamin E oil',
+    ],
+    steps:[
+      'Combine all oils in a dark glass bottle.',
+      'Add vitamin E and essential oils.',
+      'Secure lid and shake well to combine.',
+      'Apply to damp skin after shower for best absorption.',
+      'Shake before each use.',
+      'Store away from light and heat.',
+    ],
+    notes:'Apply to damp skin — oils absorb much better than on completely dry skin. Squalane is derived from sugarcane and has a feather-light feel. This is a leave-on product.',
+    source:null },
+
+  { id:'r24', cat:'Body Butter', emoji:'🍋', name:'Lemon Sugar Body Scrub',
+    time:'10 min', temp:'No heat', button:null, difficulty:'Easy',
+    tags:['scrub','exfoliant','topical','lemon','sugar','brightening'],
+    intro:'Exfoliating sugar scrub that leaves skin smooth and softened. Use before applying body butter for best results.',
+    ingredients:[
+      '1 cup white or brown sugar',
+      '¼ cup infused coconut oil, melted',
+      '2 tbsp sweet almond oil',
+      '2 tbsp fresh lemon juice',
+      '1 tsp lemon zest',
+      '10 drops lemon essential oil',
+      'Optional: 1 tsp honey for extra moisture',
+    ],
+    steps:[
+      'Combine sugar and lemon zest in a bowl.',
+      'Add melted coconut oil and almond oil. Mix well.',
+      'Stir in lemon juice, honey, and essential oil.',
+      'Transfer to a wide-mouth glass jar.',
+      'To use: massage onto damp skin in circular motions, rinse thoroughly.',
+      'Refrigerate if not using within 2 weeks due to fresh lemon juice.',
+    ],
+    notes:'Do not use on broken or irritated skin. The sugar buffs off dead skin cells — apply body butter after for a full treatment. Brown sugar is gentler; white sugar is more exfoliating.',
+    source:null },
+
+  { id:'r25', cat:'Body Butter', emoji:'🖤', name:'Activated Charcoal + Tea Tree Salve',
+    time:'20 min', temp:'Low heat', button:null, difficulty:'Easy',
+    tags:['salve','topical','charcoal','tea tree','detox','acne'],
+    intro:'Drawing salve for troubled skin, dry patches, and blemishes. Deep cleansing and soothing.',
+    ingredients:[
+      '¼ cup infused coconut oil',
+      '2 tbsp shea butter',
+      '2 tbsp beeswax pellets',
+      '1 tsp activated charcoal powder',
+      '12 drops tea tree essential oil',
+      '8 drops lavender essential oil',
+      '5 drops frankincense essential oil',
+    ],
+    steps:[
+      'Melt beeswax and shea butter together in a double boiler.',
+      'Stir in infused coconut oil. Remove from heat.',
+      'Let cool 3–4 min then add activated charcoal.',
+      'Stir vigorously until charcoal is fully incorporated (no clumps).',
+      'Add essential oils and stir.',
+      'Pour into small dark glass jars or tins.',
+      'Do not disturb until fully set (1–2 hours).',
+    ],
+    notes:'Activated charcoal draws out impurities. Use a small amount — this is potent. Dark packaging recommended as charcoal can oxidize in light. Do not use near eyes.',
+    source:null },
+
+  { id:'r26', cat:'Body Butter', emoji:'💪🏽', name:'Muscle Recovery Balm',
+    time:'20 min', temp:'Low heat', button:null, difficulty:'Easy',
+    tags:['balm','topical','muscle','recovery','arnica','peppermint','pain relief'],
+    intro:'Targeted relief balm for sore muscles and tension. Great post-workout or after a long day.',
+    ingredients:[
+      '¼ cup infused olive oil or coconut oil',
+      '2 tbsp beeswax pellets',
+      '1 tbsp arnica oil (pre-infused or infused olive oil)',
+      '1 tbsp castor oil',
+      '15 drops peppermint essential oil',
+      '10 drops eucalyptus essential oil',
+      '8 drops rosemary essential oil',
+      '5 drops clove essential oil',
+    ],
+    steps:[
+      'Melt beeswax in double boiler until fully liquid.',
+      'Add infused oil, arnica oil, and castor oil. Stir to combine.',
+      'Remove from heat. Cool 3–5 min.',
+      'Add all essential oils. Stir quickly.',
+      'Pour into small tins or dark glass jars.',
+      'Apply to sore muscles with firm massage.',
+      'Wash hands after applying — peppermint and clove are strong.',
+    ],
+    notes:'Arnica is well known for bruising and muscle soreness. Castor oil penetrates deeply. The cooling sensation from peppermint + eucalyptus provides immediate comfort.',
+    source:null },
+
+  { id:'r27', cat:'Body Butter', emoji:'🫐', name:'Blueberry Vanilla Whipped Butter',
+    time:'45 min', temp:'Low heat', button:null, difficulty:'Easy',
+    tags:['body butter','topical','blueberry','vanilla','antioxidant','whipped'],
+    intro:'Antioxidant-rich, dessert-scented body butter that feels indulgent without being heavy.',
+    ingredients:[
+      '½ cup shea butter',
+      '¼ cup infused sweet almond oil',
+      '¼ cup kokum butter',
+      '1 tbsp blueberry seed oil',
+      '1 tsp vanilla oleoresin or 10 drops vanilla fragrance oil',
+      '8 drops blueberry fragrance oil',
+      '1 tsp vitamin E oil',
+    ],
+    steps:[
+      'Melt shea butter and kokum butter together over very low heat.',
+      'Let cool in fridge 20–25 min until edges start to solidify.',
+      'Whip with hand mixer until thick and creamy (3–5 min).',
+      'Add almond oil, blueberry seed oil, vitamin E, and fragrance oils.',
+      'Whip another 2 min until light and fluffy.',
+      'Jar and label. Stores 4–6 months at room temperature.',
+    ],
+    notes:'Kokum butter is harder than shea and gives a creamier, less greasy finish. Blueberry seed oil is high in omega fatty acids and antioxidants. Great for all skin types.',
+    source:null },
+
+];
+
+// ─────────────────────────────────────────────
+// RECIPE RENDERING
+// ─────────────────────────────────────────────
+const RECIPE_CATS = ['All', 'Base Recipes', 'Body Butter', 'Infused Meals'];
+const CAT_COLORS = {
+  'Base Recipes': 'rgba(212,175,55,',
+  'Body Butter':  'rgba(196,130,170,',
+  'Infused Meals':'rgba(134,239,172,',
+};
+let activeRecipeCat = 'All';
+let recipesInited = false;
+
+function initRecipes() {
+  if (recipesInited) return;
+  recipesInited = true;
+
+  // Build category filter buttons
+  const filters = document.getElementById('recipeCatFilters');
+  RECIPE_CATS.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.textContent = cat;
+    btn.dataset.cat = cat;
+    btn.onclick = () => setRecipeCat(cat);
+    btn.style.cssText = `
+      background:${cat==='All' ? 'rgba(212,175,55,0.18)' : 'rgba(212,175,55,0.04)'};
+      border:1px solid ${cat==='All' ? 'rgba(212,175,55,0.5)' : 'rgba(212,175,55,0.15)'};
+      border-radius:1rem;padding:0.35rem 0.85rem;
+      font-family:inherit;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;
+      color:${cat==='All' ? '#f5e6a3' : 'rgba(212,175,55,0.45)'};
+      cursor:pointer;transition:all 0.18s;
+    `;
+    btn.id = 'rcf-' + cat.replace(/\s/g,'-');
+    filters.appendChild(btn);
+  });
+
+  renderRecipes();
+}
+
+function setRecipeCat(cat) {
+  activeRecipeCat = cat;
+  RECIPE_CATS.forEach(c => {
+    const btn = document.getElementById('rcf-' + c.replace(/\s/g,'-'));
+    if (!btn) return;
+    const active = c === cat;
+    btn.style.background = active ? 'rgba(212,175,55,0.18)' : 'rgba(212,175,55,0.04)';
+    btn.style.borderColor = active ? 'rgba(212,175,55,0.5)' : 'rgba(212,175,55,0.15)';
+    btn.style.color = active ? '#f5e6a3' : 'rgba(212,175,55,0.45)';
+  });
+  renderRecipes();
+}
+
+function filterRecipes() {
+  renderRecipes();
+}
+
+function renderRecipes() {
+  const query = (document.getElementById('recipeSearch')?.value || '').toLowerCase();
+  const list = document.getElementById('recipeList');
+
+  let filtered = RECIPES.filter(r => {
+    const catMatch = activeRecipeCat === 'All' || r.cat === activeRecipeCat;
+    const searchMatch = !query ||
+      r.name.toLowerCase().includes(query) ||
+      r.intro.toLowerCase().includes(query) ||
+      r.tags.some(t => t.includes(query)) ||
+      r.ingredients.some(i => i.toLowerCase().includes(query));
+    return catMatch && searchMatch;
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = '<div style="text-align:center;padding:2rem;font-size:0.72rem;color:rgba(212,175,55,0.3);font-style:italic">No recipes found. Try a different search.</div>';
+    return;
+  }
+
+  // Group by category
+  const grouped = {};
+  filtered.forEach(r => {
+    if (!grouped[r.cat]) grouped[r.cat] = [];
+    grouped[r.cat].push(r);
+  });
+
+  list.innerHTML = Object.entries(grouped).map(([cat, recipes]) => {
+    const col = CAT_COLORS[cat] || 'rgba(212,175,55,';
+    return `
+      <div style="margin-bottom:1.5rem">
+        <div style="font-size:0.58rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;
+          color:${col}0.5);margin-bottom:0.6rem">${cat}</div>
+        ${recipes.map(r => recipeCardHTML(r, col)).join('')}
+      </div>
+    `;
+  }).join('');
+}
+
+function recipeCardHTML(r, col) {
+  const diffColor = r.difficulty === 'Easy' ? '#86efac' : '#fbbf24';
+  return `
+    <div onclick="openRecipeDetail('${r.id}')" style="
+      background:rgba(255,255,255,0.02);border:1px solid ${col}0.1);
+      border-radius:0.85rem;padding:0.9rem 1rem;margin-bottom:0.6rem;
+      cursor:pointer;transition:all 0.18s;
+    " onmouseover="this.style.borderColor='${col}0.25)';this.style.background='${col}0.04)'"
+       onmouseout="this.style.borderColor='${col}0.1)';this.style.background='rgba(255,255,255,0.02)'">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.5rem">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.88rem;color:#f5e6a3;font-weight:700">
+            ${r.emoji} ${r.name}
+          </div>
+          <div style="font-size:0.65rem;color:rgba(212,175,55,0.4);margin-top:0.2rem;line-height:1.5">
+            ${r.intro}
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:0.65rem;color:#f5e6a3;font-weight:700">⏱ ${r.time}</div>
+          <div style="font-size:0.58rem;color:${diffColor};margin-top:0.15rem">${r.difficulty}</div>
+        </div>
+      </div>
+      ${r.button ? `<div style="margin-top:0.5rem;font-size:0.58rem;color:rgba(212,175,55,0.4)">
+        🌡️ ${r.temp} &nbsp;·&nbsp; ⏱ ${r.time} &nbsp;·&nbsp; 🔘 ${r.button}
+      </div>` : ''}
+    </div>
+  `;
+}
+
+// ─────────────────────────────────────────────
+// DOSING STATE
+// ─────────────────────────────────────────────
+let dosingState = { scale: 1, servings: 8 };
+
+function openRecipeDetail(id) {
+  const custom = getCustomRecipes();
+  const r = RECIPES.find(x => x.id === id) || custom.find(x => x.id === id);
+  if (!r) return;
+  const col = CAT_COLORS[r.cat] || 'rgba(212,175,55,';
+  const isBase = ['r1','r2','r3','r4','r5','r6','r7'].includes(r.id);
+
+  const mbmBlock = r.button ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;margin:0.75rem 0">
+      ${[['🌡️','TEMP',r.temp],['⏱️','TIME',r.time],['🔘','BUTTON',r.button]].map(([ic,lbl,val])=>`
+        <div style="text-align:center;background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.15);border-radius:0.55rem;padding:0.5rem 0.3rem">
+          <div style="font-size:0.85rem;font-weight:800;color:#fbbf24">${val}</div>
+          <div style="font-size:0.52rem;color:rgba(212,175,55,0.45);margin-top:0.1rem">${lbl}</div>
+        </div>`).join('')}
+    </div>` : '';
+
+  const notesBlock = r.notes ? `
+    <div style="background:rgba(212,175,55,0.04);border:1px solid rgba(212,175,55,0.1);
+      border-radius:0.6rem;padding:0.7rem 0.85rem;margin-top:0.75rem;
+      font-size:0.65rem;color:rgba(212,175,55,0.55);font-style:italic;line-height:1.6">
+      💡 ${r.notes}
+    </div>` : '';
+
+  const sourceBlock = r.source ? `
+    <a href="https://${r.source}" target="_blank" style="
+      font-size:0.57rem;color:rgba(212,175,55,0.35);text-decoration:none;
+      display:inline-block;margin-top:0.6rem">
+      🔗 View on MagicalButter.com
+    </a>` : '';
+
+  const deleteBlock = r.custom ? `
+    <button onclick="deleteCustomRecipe('${r.id}')" style="
+      width:100%;margin-top:0.75rem;background:rgba(239,68,68,0.08);
+      border:1px solid rgba(239,68,68,0.2);border-radius:0.65rem;
+      color:#fca5a5;font-family:inherit;font-size:0.65rem;font-weight:700;
+      padding:0.6rem;cursor:pointer;letter-spacing:0.1em;text-transform:uppercase">
+      🗑 Delete Recipe
+    </button>` : '';
+
+  // Dosing block — shown on all non-base recipes
+  const defaultServings = r.baseServings || 8;
+  const defaultInfusedTbsp = r.infusedTbsp || '';
+  dosingState = { scale: 1, servings: defaultServings, recipeId: id };
+
+  const dosingBlock = isBase ? `
+    <div style="margin-top:1.1rem;padding-top:0.85rem;border-top:1px solid rgba(212,175,55,0.08);
+      font-size:0.62rem;color:rgba(212,175,55,0.35);font-style:italic;text-align:center">
+      Use the 🧪 Calculator tab to calculate potency for this base recipe.
+    </div>` : `
+    <div style="margin-top:1.1rem;padding-top:1rem;border-top:1px solid rgba(212,175,55,0.1)">
+      <div style="font-size:0.58rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;
+        color:rgba(212,175,55,0.5);margin-bottom:0.75rem">📊 Yield & Dosing Calculator</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-bottom:0.75rem">
+        <div>
+          <label style="font-size:0.55rem;color:rgba(212,175,55,0.4);letter-spacing:0.1em;
+            text-transform:uppercase;display:block;margin-bottom:0.3rem">Your oil (mg/tbsp)</label>
+          <input type="number" id="dosingPotency" min="0" step="0.1"
+            placeholder="from calculator"
+            value="${window._lastMgPerTbsp || ''}"
+            oninput="updateDosing()"
+            style="width:100%;background:transparent;border:none;border-bottom:1.5px solid rgba(212,175,55,0.2);
+              color:#86efac;font-family:inherit;font-size:0.9rem;padding:0.3rem 0;outline:none;
+              transition:border-color 0.2s"
+            onfocus="this.style.borderBottomColor='rgba(212,175,55,0.6)'"
+            onblur="this.style.borderBottomColor='rgba(212,175,55,0.2)'" />
+        </div>
+        <div>
+          <label style="font-size:0.55rem;color:rgba(212,175,55,0.4);letter-spacing:0.1em;
+            text-transform:uppercase;display:block;margin-bottom:0.3rem">Infused oil in recipe (tbsp)</label>
+          <input type="number" id="dosingTbsp" min="0" step="0.5"
+            placeholder="e.g. 2"
+            value="${defaultInfusedTbsp}"
+            oninput="updateDosing()"
+            style="width:100%;background:transparent;border:none;border-bottom:1.5px solid rgba(212,175,55,0.2);
+              color:#f5e6a3;font-family:inherit;font-size:0.9rem;padding:0.3rem 0;outline:none;
+              transition:border-color 0.2s"
+            onfocus="this.style.borderBottomColor='rgba(212,175,55,0.6)'"
+            onblur="this.style.borderBottomColor='rgba(212,175,55,0.2)'" />
+        </div>
+      </div>
+
+      <!-- Scale buttons -->
+      <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.75rem;flex-wrap:wrap">
+        <span style="font-size:0.55rem;color:rgba(212,175,55,0.4);letter-spacing:0.1em;text-transform:uppercase;margin-right:0.2rem">Scale:</span>
+        ${[1,2,3].map(n=>`
+          <button id="dScale${n}" onclick="setDosingScale(${n})" style="
+            background:${n===1?'rgba(212,175,55,0.18)':'rgba(212,175,55,0.04)'};
+            border:1px solid ${n===1?'rgba(212,175,55,0.5)':'rgba(212,175,55,0.15)'};
+            border-radius:0.5rem;padding:0.3rem 0.65rem;color:${n===1?'#f5e6a3':'rgba(212,175,55,0.4)'};
+            font-family:inherit;font-size:0.7rem;font-weight:700;cursor:pointer;transition:all 0.15s">
+            ${n}×
+          </button>`).join('')}
+        <input type="number" id="dosingScaleCustom" min="0.5" step="0.5" placeholder="custom×"
+          oninput="setDosingScale(parseFloat(this.value)||1)"
+          style="width:70px;background:transparent;border:1px solid rgba(212,175,55,0.15);
+            border-radius:0.5rem;color:#f5e6a3;font-family:inherit;font-size:0.7rem;
+            padding:0.3rem 0.5rem;outline:none;text-align:center" />
+      </div>
+
+      <!-- Servings adjuster -->
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.85rem">
+        <span style="font-size:0.55rem;color:rgba(212,175,55,0.4);letter-spacing:0.1em;text-transform:uppercase">Servings:</span>
+        <button onclick="adjustServings(-1)" style="
+          width:1.8rem;height:1.8rem;border-radius:50%;
+          background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.2);
+          color:#f5e6a3;font-family:inherit;font-size:1rem;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;transition:all 0.15s">−</button>
+        <span id="dosingServingsDisplay" style="font-size:1.1rem;font-weight:800;color:#f5e6a3;
+          min-width:2.5rem;text-align:center">${defaultServings}</span>
+        <button onclick="adjustServings(1)" style="
+          width:1.8rem;height:1.8rem;border-radius:50%;
+          background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.2);
+          color:#f5e6a3;font-family:inherit;font-size:1rem;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;transition:all 0.15s">+</button>
+        <span style="font-size:0.6rem;color:rgba(212,175,55,0.3);font-style:italic">
+          ${r.yieldLabel ? '(yields ~'+r.yieldLabel+')' : ''}
+        </span>
+      </div>
+
+      <!-- Result -->
+      <div id="dosingResult" style="display:none;
+        background:rgba(134,239,172,0.06);border:1px solid rgba(134,239,172,0.15);
+        border-radius:0.75rem;padding:0.85rem 1rem">
+        <div style="display:flex;justify-content:space-between;font-size:0.7rem;padding:0.2rem 0">
+          <span style="color:rgba(134,239,172,0.6)">Infused oil in this batch</span>
+          <span id="dosingScaledTbsp" style="color:#f5e6a3;font-weight:700"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.7rem;padding:0.2rem 0">
+          <span style="color:rgba(134,239,172,0.6)">Total THC in recipe</span>
+          <span id="dosingTotalMg" style="color:#f5e6a3;font-weight:700"></span>
+        </div>
+        <div style="height:1px;background:rgba(134,239,172,0.1);margin:0.4rem 0"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:0.65rem;color:rgba(134,239,172,0.6)">THC per serving</span>
+          <span id="dosingPerServing" style="font-size:1.4rem;font-weight:800;color:#86efac"></span>
+        </div>
+        <div id="dosingScaleNote" style="font-size:0.58rem;color:rgba(134,239,172,0.4);
+          margin-top:0.35rem;font-style:italic"></div>
+      </div>
+    </div>`;
+
+  document.getElementById('recipeDetailContent').innerHTML = `
+    <div style="font-size:0.58rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;
+      color:${col}0.45);margin-bottom:0.5rem">${r.cat}${r.custom ? ' · <span style="color:#d4af37">✦ YOUR RECIPE</span>' : ''}</div>
+    <div style="font-size:1.15rem;font-weight:700;color:#f5e6a3;margin-bottom:0.3rem">${r.emoji} ${r.name}</div>
+    <div style="font-size:0.68rem;color:rgba(212,175,55,0.45);margin-bottom:0.75rem;line-height:1.5">${r.intro}</div>
+    ${mbmBlock}
+    <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${col}0.5);margin-bottom:0.5rem;margin-top:0.75rem">Ingredients</div>
+    ${r.ingredients.map(i=>`<div style="font-size:0.72rem;color:#f5e6a3;padding:0.2rem 0;border-bottom:1px solid rgba(212,175,55,0.06)">• ${i}</div>`).join('')}
+    <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${col}0.5);margin-bottom:0.5rem;margin-top:0.85rem">Steps</div>
+    ${r.steps.map((s,i)=>`<div style="display:flex;gap:0.6rem;margin-bottom:0.5rem;font-size:0.72rem;color:#f5e6a3;line-height:1.5">
+      <span style="background:${col}0.15);color:${col}0.9);font-weight:800;font-size:0.65rem;width:1.3rem;height:1.3rem;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:0.1rem">${i+1}</span>
+      <span>${s}</span>
+    </div>`).join('')}
+    ${notesBlock}
+    ${sourceBlock}
+    ${dosingBlock}
+    ${deleteBlock}
+  `;
+  document.getElementById('recipeDetailModal').classList.add('visible');
+}
+
+function updateDosing() {
+  const potency  = parseFloat(document.getElementById('dosingPotency')?.value) || 0;
+  const tbsp     = parseFloat(document.getElementById('dosingTbsp')?.value) || 0;
+  const scale    = dosingState.scale || 1;
+  const servings = dosingState.servings || 1;
+  const el       = document.getElementById('dosingResult');
+  if (!el) return;
+
+  if (!potency || !tbsp || !servings) { el.style.display = 'none'; return; }
+
+  const scaledTbsp  = tbsp * scale;
+  const totalMg     = scaledTbsp * potency;
+  const mgPerServ   = totalMg / servings;
+
+  document.getElementById('dosingScaledTbsp').textContent  = scaledTbsp.toFixed(1) + ' tbsp' + (scale > 1 ? ' ('+scale+'× batch)' : '');
+  document.getElementById('dosingTotalMg').textContent     = totalMg.toFixed(1) + ' mg THC';
+  document.getElementById('dosingPerServing').textContent  = mgPerServ.toFixed(1) + ' mg';
+  document.getElementById('dosingScaleNote').textContent   = scale > 1
+    ? `${scale}× recipe · ${servings} servings · ${potency} mg/tbsp oil`
+    : `1× recipe · ${servings} servings · ${potency} mg/tbsp oil`;
+  el.style.display = 'block';
+}
+
+function setDosingScale(n) {
+  if (isNaN(n) || n <= 0) return;
+  dosingState.scale = n;
+  // Update scale buttons
+  [1,2,3].forEach(i => {
+    const btn = document.getElementById('dScale'+i);
+    if (!btn) return;
+    const active = i === n;
+    btn.style.background     = active ? 'rgba(212,175,55,0.18)' : 'rgba(212,175,55,0.04)';
+    btn.style.borderColor    = active ? 'rgba(212,175,55,0.5)'  : 'rgba(212,175,55,0.15)';
+    btn.style.color          = active ? '#f5e6a3' : 'rgba(212,175,55,0.4)';
+  });
+  updateDosing();
+}
+
+function adjustServings(delta) {
+  const current = dosingState.servings || 1;
+  dosingState.servings = Math.max(1, current + delta);
+  const display = document.getElementById('dosingServingsDisplay');
+  if (display) display.textContent = dosingState.servings;
+  updateDosing();
+}
+
+function closeRecipeDetail() {
+  document.getElementById('recipeDetailModal').classList.remove('visible');
+  dosingState = { scale: 1, servings: 8 };
+}
+
+// ─────────────────────────────────────────────
+// ACTIVE BATCH — pre-fill dosing in recipes
+// ─────────────────────────────────────────────
+function getActiveBatch() {
+  try { return JSON.parse(localStorage.getItem('hpActiveBatch') || 'null'); } catch(e) { return null; }
+}
+
+function renderActiveBatchBanner() {
+  const batch = getActiveBatch();
+  const banner = document.getElementById('activeBatchBanner');
+  if (!banner) return;
+  if (!batch) { banner.style.display = 'none'; return; }
+
+  document.getElementById('activeBatchDetails').textContent =
+    `${batch.carrierEmoji} ${batch.strain}  ·  ${batch.mgPerTbsp} mg THC/tbsp`;
+  document.getElementById('activeBatchMeta').textContent =
+    `${batch.carrier}  ·  ${batch.thcPct}% THC  ·  ${batch.flowerG}g flower  ·  ${batch.oilOz} fl oz  ·  ${batch.machine}  ·  Calculated ${batch.savedAt}`;
+
+  banner.style.display = 'block';
+  // Sync window global
+  window._lastMgPerTbsp = batch.mgPerTbsp;
+}
+
+function clearActiveBatch() {
+  if (!confirm('Clear active batch? The potency will no longer pre-fill in recipes.')) return;
+  try { localStorage.removeItem('hpActiveBatch'); } catch(e) {}
+  window._lastMgPerTbsp = null;
+  renderActiveBatchBanner();
+}
+
+// ── Patch initRecipes to show banner ──
+const _origInitRecipes = initRecipes;
+initRecipes = function() {
+  _origInitRecipes();
+  renderActiveBatchBanner();
+};
+
+// ── Also render banner when switching to recipes tab ──
+const _origSwitchTab = switchTab;
+switchTab = function(name) {
+  _origSwitchTab(name);
+  if (name === 'recipes') renderActiveBatchBanner();
+};
+
+// ── On page load restore _lastMgPerTbsp from storage ──
+(function restoreActiveBatch() {
+  const batch = getActiveBatch();
+  if (batch) window._lastMgPerTbsp = batch.mgPerTbsp;
+})();
+
+// ─────────────────────────────────────────────
+// CUSTOM RECIPES
+// ─────────────────────────────────────────────
+function getCustomRecipes() {
+  try { return JSON.parse(localStorage.getItem('hpCustomRecipes') || '[]'); } catch(e) { return []; }
+}
+function saveCustomRecipesToStorage(arr) {
+  try { localStorage.setItem('hpCustomRecipes', JSON.stringify(arr)); } catch(e) {}
+}
+
+function openAddRecipeModal() {
+  // Reset form
+  ['arName','arEmoji','arIntro','arTime','arNotes','arInfusedTbsp','arInfusedCarrier','arYield','arServings']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('arIngList').innerHTML = '';
+  document.getElementById('arStepList').innerHTML = '';
+  document.getElementById('arError').style.display = 'none';
+  document.getElementById('arCat').value = 'My Recipes';
+  document.getElementById('arDifficulty').value = 'Easy';
+  // Add one empty row each
+  addArRow('ing'); addArRow('step');
+  document.getElementById('addRecipeModal').classList.add('visible');
+}
+
+function closeAddRecipeModal() {
+  document.getElementById('addRecipeModal').classList.remove('visible');
+}
+
+function addArRow(type) {
+  const listId = type === 'ing' ? 'arIngList' : 'arStepList';
+  const placeholder = type === 'ing' ? 'e.g. 2 tbsp infused coconut oil' : 'e.g. Whip until fluffy';
+  const list = document.getElementById(listId);
+  const idx  = list.children.length;
+  const div  = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:0.4rem;margin-bottom:0.4rem;align-items:center';
+  div.innerHTML = `
+    ${type === 'step' ? `<span style="font-size:0.65rem;color:rgba(212,175,55,0.4);font-weight:700;min-width:1.1rem">${idx+1}.</span>` : '<span style="font-size:0.7rem;color:rgba(212,175,55,0.3)">•</span>'}
+    <input type="text" placeholder="${placeholder}" style="
+      flex:1;background:transparent;border:none;border-bottom:1px solid rgba(212,175,55,0.15);
+      color:#f5e6a3;font-family:inherit;font-size:0.78rem;padding:0.25rem 0;outline:none" />
+    <button onclick="this.parentElement.remove()" style="
+      background:none;border:none;color:rgba(239,68,68,0.4);cursor:pointer;font-size:0.9rem;
+      padding:0;flex-shrink:0;transition:color 0.15s"
+      onmouseover="this.style.color='#fca5a5'" onmouseout="this.style.color='rgba(239,68,68,0.4)'">×</button>
+  `;
+  list.appendChild(div);
+}
+
+function saveCustomRecipe() {
+  const name       = document.getElementById('arName').value.trim();
+  const emoji      = document.getElementById('arEmoji').value.trim() || '🌿';
+  const cat        = document.getElementById('arCat').value;
+  const intro      = document.getElementById('arIntro').value.trim();
+  const difficulty = document.getElementById('arDifficulty').value;
+  const time       = document.getElementById('arTime').value.trim();
+  const notes      = document.getElementById('arNotes').value.trim();
+  const infTbsp    = parseFloat(document.getElementById('arInfusedTbsp').value) || 0;
+  const infCarrier = document.getElementById('arInfusedCarrier').value.trim();
+  const yieldLabel = document.getElementById('arYield').value.trim();
+  const servings   = parseInt(document.getElementById('arServings').value) || 4;
+  const errEl      = document.getElementById('arError');
+
+  const ingredients = [...document.getElementById('arIngList').querySelectorAll('input')]
+    .map(i => i.value.trim()).filter(Boolean);
+  const steps = [...document.getElementById('arStepList').querySelectorAll('input')]
+    .map(i => i.value.trim()).filter(Boolean);
+
+  if (!name)            { errEl.textContent = '⚠ Enter a recipe name.'; errEl.style.display='block'; return; }
+  if (!ingredients.length) { errEl.textContent = '⚠ Add at least one ingredient.'; errEl.style.display='block'; return; }
+  if (!steps.length)    { errEl.textContent = '⚠ Add at least one step.'; errEl.style.display='block'; return; }
+  errEl.style.display = 'none';
+
+  const recipe = {
+    id:           'c_' + Date.now(),
+    cat, emoji, name, intro: intro || name, difficulty,
+    time:         time || '—',
+    tags:         [cat.toLowerCase(), 'custom', infCarrier].filter(Boolean),
+    ingredients, steps,
+    notes:        notes || null,
+    source:       null,
+    custom:       true,
+    infusedTbsp:  infTbsp || null,
+    infusedCarrier: infCarrier || null,
+    yieldLabel:   yieldLabel || null,
+    baseServings: servings,
+    createdAt:    new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
+  };
+
+  const existing = getCustomRecipes();
+  existing.unshift(recipe);
+  saveCustomRecipesToStorage(existing);
+  closeAddRecipeModal();
+  renderRecipes();
+}
+
+function deleteCustomRecipe(id) {
+  if (!confirm('Delete this recipe?')) return;
+  saveCustomRecipesToStorage(getCustomRecipes().filter(r => r.id !== id));
+  closeRecipeDetail();
+  renderRecipes();
+}
+
+// ── Patch renderRecipes to include custom recipes ──
+const _origRenderRecipes = renderRecipes;
+renderRecipes = function() {
+  const query = (document.getElementById('recipeSearch')?.value || '').toLowerCase();
+  const list  = document.getElementById('recipeList');
+
+  const custom = getCustomRecipes();
+  const allRecipes = [...custom, ...RECIPES];
+
+  let filtered = allRecipes.filter(r => {
+    const catMatch = activeRecipeCat === 'All' || r.cat === activeRecipeCat;
+    const searchMatch = !query ||
+      r.name.toLowerCase().includes(query) ||
+      (r.intro||'').toLowerCase().includes(query) ||
+      (r.tags||[]).some(t => t.includes(query)) ||
+      (r.ingredients||[]).some(i => i.toLowerCase().includes(query));
+    return catMatch && searchMatch;
+  });
+
+  if (!filtered.length) {
+    list.innerHTML = '<div style="text-align:center;padding:2rem;font-size:0.72rem;color:rgba(212,175,55,0.3);font-style:italic">No recipes found. Try a different search or add your own!</div>';
+    return;
+  }
+
+  // Ensure My Recipes category in filters if custom recipes exist
+  if (custom.length && !document.getElementById('rcf-My-Recipes')) {
+    const filters = document.getElementById('recipeCatFilters');
+    if (filters) {
+      const btn = document.createElement('button');
+      btn.textContent = 'My Recipes';
+      btn.dataset.cat = 'My Recipes';
+      btn.onclick = () => setRecipeCat('My Recipes');
+      btn.id = 'rcf-My-Recipes';
+      btn.style.cssText = 'background:rgba(212,175,55,0.04);border:1px solid rgba(212,175,55,0.15);border-radius:1rem;padding:0.35rem 0.85rem;font-family:inherit;font-size:0.65rem;font-weight:700;letter-spacing:0.08em;color:rgba(212,175,55,0.45);cursor:pointer;transition:all 0.18s';
+      filters.insertBefore(btn, filters.children[1] || null);
+    }
+  }
+
+  const grouped = {};
+  filtered.forEach(r => {
+    const key = r.custom ? 'My Recipes' : r.cat;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(r);
+  });
+
+  // My Recipes always first
+  const order = ['My Recipes', 'Base Recipes', 'Body Butter', 'Infused Meals'];
+  const sorted = Object.fromEntries(order.filter(k => grouped[k]).map(k => [k, grouped[k]]));
+  Object.entries(grouped).forEach(([k,v]) => { if (!sorted[k]) sorted[k] = v; });
+
+  list.innerHTML = Object.entries(sorted).map(([cat, recipes]) => {
+    const col = cat === 'My Recipes' ? 'rgba(212,175,55,' : (CAT_COLORS[cat] || 'rgba(212,175,55,');
+    return `
+      <div style="margin-bottom:1.5rem">
+        <div style="font-size:0.58rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;
+          color:${col}0.5);margin-bottom:0.6rem">${cat}</div>
+        ${recipes.map(r => recipeCardHTML(r, col)).join('')}
+      </div>
+    `;
+  }).join('');
+};
 
 // ─────────────────────────────────────────────
 // BATCH HISTORY

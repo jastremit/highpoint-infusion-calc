@@ -1,0 +1,44 @@
+{
+  "name": "HiPoint Infusion Lab",
+  "short_name": "HiPoint Lab",
+  "description": "Cannabis batch dosage calculator, strain library, recipes, and pricing tools for home infusers.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f0a0f",
+  "theme_color": "#0f0a0f",
+  "orientation": "portrait-primary",
+  "categories": ["food", "lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='100' fill='%230f0a0f'/%3E%3Ccircle cx='256' cy='256' r='220' fill='none' stroke='%23d4af37' stroke-width='14'/%3E%3Ctext x='256' y='320' font-family='serif' font-size='220' text-anchor='middle' fill='%23d4af37'%3E%F0%9F%8C%BF%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='38' fill='%230f0a0f'/%3E%3Ccircle cx='96' cy='96' r='82' fill='none' stroke='%23d4af37' stroke-width='5'/%3E%3Ctext x='96' y='120' font-family='serif' font-size='82' text-anchor='middle' fill='%23d4af37'%3E%F0%9F%8C%BF%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Calculator",
+      "url": "./index.html#calculator",
+      "description": "Open the dosage calculator"
+    },
+    {
+      "name": "Recipes",
+      "url": "./index.html#recipes",
+      "description": "Browse infusion recipes"
+    },
+    {
+      "name": "Pricing",
+      "url": "./pricing.html",
+      "description": "Product pricing tracker"
+    }
+  ],
+  "screenshots": [],
+  "lang": "en-US"
+}
