@@ -1,10 +1,10 @@
 # 🌿 HiPoint Infusion Lab
 
-A personal cannabis infusion toolkit — dosage calculator, strain library, recipe browser, and product pricing tracker — built for home infusers.
+A personal cannabis infusion toolkit — dosage calculator, strain library, recipe browser with yield/dosing calculator, and product pricing tracker — built for home infusers.
 
 **Live site:** [https://jastremit.github.io/highpoint-infusion-calc/](https://jastremit.github.io/highpoint-infusion-calc/)
 
-> **PWA enabled** — install directly to your phone or desktop as an app. Works fully offline.
+> **PWA enabled** — install directly to your phone or desktop. Works fully offline.
 
 ---
 
@@ -22,10 +22,10 @@ A personal cannabis infusion toolkit — dosage calculator, strain library, reci
 ## Installing as an App (PWA)
 
 **iPhone / iPad (Safari):**
-Tap Share → Add to Home Screen → opens full screen with no browser bar
+Tap Share → Add to Home Screen → opens full screen, no browser bar
 
 **Android (Chrome):**
-Tap 3-dot menu → Install App (or tap the banner that appears automatically)
+Tap 3-dot menu → Install App (or tap the install banner automatically)
 
 **Desktop (Chrome):**
 Click the install icon in the address bar
@@ -36,15 +36,12 @@ Click the install icon in the address bar
 
 ### 🧪 Calculator
 
-The core dosage tool.
-
 **Strain search:**
 - 2,267 strains from the Leafly public dataset — name, type, effects, terpenes, flavors
-- Live autocomplete — dropdown shows strain name, type, and dispensary
+- Live autocomplete dropdown shows strain name, type badge, and dispensary
 - THC/CBD/CBG are **never auto-filled** — always enter from your actual batch label
-- Add custom strains via **+ Add New Strain** (saved to browser storage)
+- Add custom strains via **+ Add New Strain** with duplicate detection
 - Track dispensary, batch date, and notes per strain
-- Duplicate detection — update existing or save as new batch
 
 **Inputs:**
 - Strain name (searchable, 2,267 strains)
@@ -56,11 +53,11 @@ The core dosage tool.
 - Batch quality: Good / Average / Rough
 
 **MBM Settings card** — auto-populates when you select a carrier:
-- Temperature, infuse time, which button to press
+- Temperature, infuse time, which button to press on the machine
 - Source-linked to official MagicalButter.com recipes
-- Flammable warning for tincture
+- Red flammable warning for tincture
 
-**Process efficiency** (tuned to your exact setup):
+**Process efficiency:**
 
 | Machine | Good | Average | Rough |
 |---|---|---|---|
@@ -69,17 +66,20 @@ The core dosage tool.
 
 **Outputs:**
 - mg THC / CBD / CBG per tablespoon, teaspoon, and fl oz
-- Total active cannabinoids across the full batch
+- Total active cannabinoids across full batch
 - Strain effects + terpene profile
-- Batch summary with machine, efficiency %, carrier, flower weight
+- Batch summary (machine, efficiency %, carrier, flower weight)
 - Notes field + Save to History button
+
+**Active Batch Save:**
+Every time you calculate, the app saves your batch (strain, mg/tbsp, carrier, THC%, machine, timestamp) to storage. Persists across sessions and pre-fills the dosing calculator in every recipe automatically.
 
 ---
 
 ### 📋 History
 
-- Log of every saved batch
-- Shows strain, THC%, mg/tbsp, flower, oil, carrier, machine, dispensary, notes
+- Full log of every saved batch
+- Strain, THC%, mg/tbsp, flower, oil, carrier, machine, dispensary, notes
 - Delete individual entries
 - Export as printable PDF
 
@@ -87,63 +87,98 @@ The core dosage tool.
 
 ### 🛠 Tools
 
-**⏱ Decarb Timer**
-- 40-minute countdown for 220°F oven decarb (MBM method)
-- Start / Pause / Resume / Reset
-- Browser notification when complete
+**⏱ Decarb Timer** — 40-min countdown at 220°F, pause/resume, browser notification on complete
 
-**💰 Cost Tracker**
-- Enter grams purchased + total cost + THC% + carrier oz
-- Returns: cost per gram, cost per mg THC, mg per tbsp of finished oil, input cost per tbsp
+**💰 Cost Tracker** — grams + cost + THC% + carrier oz → cost per gram, cost per mg THC, mg/tbsp of finished oil, input cost per tbsp
 
-**🔄 Reverse Dose Calculator**
-- Enter desired mg per piece + number of pieces + THC%
-- Returns: how many grams of flower and how much carrier you need
+**🔄 Reverse Dose Calculator** — target mg per piece + pieces + THC% → grams of flower and carrier needed
 
-**🍪 Recipe Scaler**
-- Enter tbsp of oil in recipe + servings + mg per tbsp
-- Returns: mg THC per serving
+**🍪 Recipe Scaler** — tbsp of oil + servings + mg/tbsp → mg per serving
 
 ---
 
 ### 📚 Library
 
-- View and delete custom strains you've saved
-- Export saved strains as JSON (dated backup file)
+- View and delete custom saved strains
+- Export strains as JSON (dated backup)
 - Import JSON to restore or transfer your library
 
 ---
 
 ### 🍳 Recipes — 27 recipes across 3 categories
 
-**Base Recipes (7) — official MagicalButter.com recipes:**
-- Infused Butter · Coconut Oil · Olive Oil · MCT Oil · Honey · Alcohol Tincture · Veg Glycerin Tincture
-- Each shows MBM temp, time, button to press, and links to source
+**Browse by:** All · Base Recipes · Body Butter · Infused Meals · My Recipes
 
-**Body Butter (10):**
-- Classic Infused Body Butter
-- Whipped Rose Body Butter
-- Lavender + Eucalyptus Salve
-- Chocolate Mint Lotion Bar
-- Mango Hibiscus Whipped Butter
-- Citrus Glow Body Oil
-- Lemon Sugar Body Scrub
-- Activated Charcoal + Tea Tree Salve
-- Muscle Recovery Balm (arnica + peppermint)
-- Blueberry Vanilla Whipped Butter
+**Search:** by name, ingredient, tag, or description
 
-**Infused Meals (10):**
+---
 
-*Quick (30 min or less):*
-- Infused Avocado Toast · Garlic Butter Pasta · Honey Lemon Vinaigrette · Banana Pancakes
+#### Base Recipes (7) — official MagicalButter.com recipes
+Each shows MBM temp, infuse time, which button to press, and links to the source recipe.
 
-*Full Dinners:*
-- Herb Roasted Chicken · Coconut Curry · Steak Compound Butter
+- 🧈 Infused Butter — 160°F · 2 hrs · 2 HR BUTTER
+- 🥥 Infused Coconut Oil — 160°F · 2 hrs · 2 HR OIL
+- 🫒 Infused Olive Oil — 160°F · 1 hr · 1 HR OIL
+- 💧 Infused MCT Oil — 160°F · 1 hr · 1 HR OIL
+- 🍯 Infused Honey — 130°F · 1 hr · 1 HR OIL
+- 🧪 Alcohol Tincture — 130°F · 4–8 hrs · 4 HR TINCTURE ⚠️ flammable
+- 🌿 Vegetable Glycerin Tincture — 130°F · 4–8 hrs · 4 HR TINCTURE
 
-*Snacks & Appetizers:*
-- Stovetop Popcorn · Garlic Bread · Mac & Cheese
+#### Body Butter (10)
+- 🧴 Classic Infused Body Butter
+- 🌹 Whipped Rose Body Butter
+- 🌿 Lavender + Eucalyptus Salve
+- 🍫 Chocolate Mint Lotion Bar
+- 🌸 Mango Hibiscus Whipped Butter
+- ☀️ Citrus Glow Body Oil
+- 🍋 Lemon Sugar Body Scrub
+- 🖤 Activated Charcoal + Tea Tree Salve
+- 💪🏽 Muscle Recovery Balm (arnica + peppermint)
+- 🫐 Blueberry Vanilla Whipped Butter
 
-Every recipe includes full ingredients, numbered steps, notes, and dosing tips (every infused meal recipe flags when to add infused oil/butter off heat to preserve potency).
+#### Infused Meals (10)
+*Quick (30 min or less):* Avocado Toast · Garlic Butter Pasta · Honey Lemon Vinaigrette · Banana Pancakes
+
+*Full Dinners:* Herb Roasted Chicken · Coconut Curry · Steak Compound Butter
+
+*Snacks & Appetizers:* Stovetop Popcorn · Garlic Bread · Mac & Cheese
+
+Every recipe flags exactly when to add infused oil/butter off heat to preserve potency.
+
+---
+
+### 📊 Yield & Dosing Calculator (inside every recipe)
+
+Built into the detail view of every non-base recipe.
+
+- **Your oil potency (mg/tbsp)** — auto pre-fills from your last calculated batch
+- **Infused oil in recipe (tbsp)** — how much your recipe calls for
+- **Scale: 1× · 2× · 3× · custom** — scales ingredient amounts and total mg
+- **Servings +/−** — divides total mg across portions, independent from scale
+
+Live output: infused oil scaled, total THC in recipe, mg per serving.
+
+Scale and servings are independent — make a 2× batch and keep the same servings for double-strength pieces, or double the servings to keep the same mg each.
+
+---
+
+### ✦ Add Your Own Recipe
+
+Tap **+ Add** in the Recipes tab. Includes name, emoji, category, description, difficulty, time, infused ingredient amount and carrier, total yield, default servings, dynamic ingredient and step builder, and notes. Saved recipes appear in **My Recipes** with a ✦ badge. Delete from inside the recipe detail.
+
+---
+
+### ⚗️ Active Batch Banner
+
+When you open the Recipes tab after calculating, a green banner shows your active batch:
+
+```
+⚗️ Active Batch — pre-filled in all recipes
+🥥 Blue Dream · 45.2 mg THC/tbsp
+Coconut Oil · 24% THC · 14g flower · 32 fl oz · Magical Butter · Calculated Apr 16, 3:45 PM
+```
+
+Every recipe detail pre-fills the potency field from this batch automatically. Persists across sessions until you run a new batch or tap Clear.
 
 ---
 
@@ -152,9 +187,9 @@ Every recipe includes full ingredients, numbered steps, notes, and dosing tips (
 | Type | Color |
 |---|---|
 | Indica | 💜 Purple |
-| Indica-Dom Hybrid | 💜→💚 Purple-to-green |
+| Indica-Dom Hybrid | 💜→💚 |
 | Hybrid | 💚 Green |
-| Sativa-Dom Hybrid | 💚→❤️ Green-to-red |
+| Sativa-Dom Hybrid | 💚→❤️ |
 | Sativa | ❤️ Red |
 
 ---
@@ -162,31 +197,31 @@ Every recipe includes full ingredients, numbered steps, notes, and dosing tips (
 ## Product Pricing Tracker (`pricing.html`)
 
 ### 📊 Products Dashboard
-All saved products with cost per unit, suggested sell price, and profit margin at a glance.
+All saved products with cost per unit, suggested sell price, and margin at a glance. Business summary shows avg cost, avg sell price, and total equipment investment.
 
 ### ➕ Product Builder
 - Name, category (Body Butter, Honey, Meal Prep, Gummies, Other), units per batch
-- Add ingredients/materials with full cost-per-batch math
-- Add packaging items (jars, lids, labels, bags)
+- Add ingredients/materials — total cost + total amount + amount per batch → auto cost per batch
+- Add packaging (jars, lids, labels, bags) with same math
 - Labor (hourly rate × hours)
 - Target profit margin %
-- Live suggested sell price as you add items
-- Every ingredient/packaging item supports a purchase link (Amazon, etc.)
+- Live suggested sell price updates as you add items
+- Every item supports a purchase link (Amazon, etc.)
 
 ### 🧺 Ingredient Library
-Reusable ingredient database with cost-per-unit math and source links. Enter total purchased, total amount, and typical batch usage — app calculates cost per batch automatically.
+Reusable ingredients with cost-per-unit math and source links. Enter once, reuse across products.
 
 ### 🛠 Equipment Log
-One-time business expense tracker with name, cost, date, notes, and purchase link. Running total shown.
+One-time business expenses with name, cost, date, notes, and purchase link. Running total at bottom.
 
 ---
 
 ## Process This App Is Tuned For
 
-1. **Decarb:** 220°F / 40 minutes (MBM) or inside machine (LEVO II+)
+1. **Decarb:** 220°F / 40 min oven (or inside LEVO II+)
 2. **Infusion:** Magical Butter Machine or LEVO II+
-3. **Straining:** Cheesecloth (LEVO built-in strainer not used)
-4. **Minimum batch:** 16 fl oz of carrier
+3. **Straining:** Cheesecloth
+4. **Minimum batch:** 16 fl oz carrier
 
 ---
 
@@ -195,7 +230,7 @@ One-time business expense tracker with name, cost, date, notes, and purchase lin
 | Phase | Status | Platform |
 |---|---|---|
 | Personal use | ✅ Live | GitHub Pages |
-| Installable app | ✅ Live | PWA |
+| Installable app | ✅ Live | PWA (offline capable) |
 | Custom domain + selling | 🔜 Next | Netlify + Stripe |
 | User accounts + cloud sync | 🔜 Future | React + Supabase |
 
@@ -205,9 +240,9 @@ One-time business expense tracker with name, cost, date, notes, and purchase lin
 
 - Pure HTML / CSS / JavaScript — no frameworks, no build step, no dependencies
 - 2,267 strain dataset from Leafly public data (Kaggle)
-- Custom strains and batch history in browser localStorage
+- All user data (strains, batches, recipes, active batch) in browser localStorage
 - PWA: `manifest.json` + `sw.js` service worker (cache-first, full offline support)
-- Single-file architecture for easy version control and deployment
+- Single-file architecture — easy to version control and deploy anywhere
 - Hosted free on GitHub Pages
 
 ---
